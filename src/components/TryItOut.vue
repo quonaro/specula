@@ -43,9 +43,12 @@
           :key="idx"
           class="space-y-1"
         >
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-2 flex-wrap">
             <label class="text-sm font-medium">
               {{ resolver.resolve(param).name }}
+              <span v-if="getParameterType(param)" :class="`font-normal ${getTypeColorClass(getParameterType(param))}`">
+                ({{ getParameterType(param) }})
+              </span>
             </label>
             <Badge variant="outline" class="text-xs">
               {{ resolver.resolve(param).in }}
@@ -321,6 +324,85 @@ const generateExampleFromSchema = (schema: any): any => {
 
 const updateParamValue = (name: string, value: string) => {
   paramValues.value = { ...paramValues.value, [name]: value }
+}
+
+// Get parameter type from schema
+const getParameterType = (param: any): string => {
+  const resolved = resolver.resolve(param)
+  if (!resolved.schema) return ''
+  
+  const schema = resolver.resolve(resolved.schema)
+  
+  // Handle $ref
+  if (schema.$ref) {
+    const refName = schema.$ref.split('/').pop()
+    return refName || ''
+  }
+  
+  // Handle array
+  if (schema.type === 'array') {
+    if (schema.items) {
+      const items = resolver.resolve(schema.items)
+      if (items.$ref) {
+        const refName = items.$ref.split('/').pop()
+        return `array<${refName}>`
+      }
+      return `array<${items.type || 'any'}>`
+    }
+    return 'array'
+  }
+  
+  // Handle object
+  if (schema.type === 'object') {
+    return 'object'
+  }
+  
+  // Handle primitive types
+  if (schema.type) {
+    return schema.format ? `${schema.type}(${schema.format})` : schema.type
+  }
+  
+  return ''
+}
+
+// Get color class for type
+const getTypeColorClass = (type: string): string => {
+  if (!type) return 'text-muted-foreground'
+  
+  const lowerType = type.toLowerCase()
+  
+  // String types - blue
+  if (lowerType.startsWith('string') || lowerType.includes('string')) {
+    return 'text-blue-400'
+  }
+  
+  // Number types - green
+  if (lowerType.includes('number') || lowerType.includes('integer') || lowerType.includes('float') || lowerType.includes('double')) {
+    return 'text-green-400'
+  }
+  
+  // Boolean - purple
+  if (lowerType.includes('boolean') || lowerType === 'bool') {
+    return 'text-purple-400'
+  }
+  
+  // Array - orange
+  if (lowerType.startsWith('array')) {
+    return 'text-orange-400'
+  }
+  
+  // Object - yellow
+  if (lowerType.includes('object')) {
+    return 'text-yellow-400'
+  }
+  
+  // Date/time formats - cyan
+  if (lowerType.includes('date') || lowerType.includes('time')) {
+    return 'text-cyan-400'
+  }
+  
+  // Default - muted
+  return 'text-muted-foreground'
 }
 
 // Check if parameter is a file (type: string, format: binary)
