@@ -145,3 +145,21 @@ All colors MUST be HSL.
     filter: brightness(1.5) contrast(1.2);
   }
 }
+
+/* Toast notification size customization */
+.Vue-Toastification__toast {
+  min-height: 48px !important;
+  padding: 10px 14px !important;
+  font-size: 13px !important;
+}
+
+.Vue-Toastification__toast-body {
+  font-size: 13px !important;
+  line-height: 1.4 !important;
+}
+
+.Vue-Toastification__close-button {
+  width: 20px !important;
+  height: 20px !important;
+  font-size: 16px !important;
+}

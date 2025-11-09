@@ -7,10 +7,22 @@
 
       <!-- Server Selection -->
       <div class="space-y-2">
-        <label class="text-sm font-medium">Server URL</label>
+        <div class="flex items-center justify-between">
+          <label class="text-sm font-medium">Server URL</label>
+          <Button
+            variant="ghost"
+            size="sm"
+            @click="isServerUrlLocked = !isServerUrlLocked"
+            class="h-7 px-2"
+          >
+            <Lock v-if="isServerUrlLocked" class="w-4 h-4" />
+            <Unlock v-else class="w-4 h-4" />
+          </Button>
+        </div>
         <Input
           :model-value="selectedServer"
           @update:model-value="selectedServer = $event"
+          :disabled="isServerUrlLocked"
           placeholder="https://api.example.com"
         />
       </div>
@@ -135,7 +147,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { Play, Copy, Check } from 'lucide-vue-next'
+import { Play, Copy, Check, Lock, Unlock } from 'lucide-vue-next'
 import Card from './ui/Card.vue'
 import Button from './ui/Button.vue'
 import Input from './ui/Input.vue'
@@ -170,6 +182,7 @@ const requestBody = ref('{}')
 const selectedServer = ref(
   props.operation.servers?.[0]?.url || props.spec.servers?.[0]?.url || ''
 )
+const isServerUrlLocked = ref(true)
 
 const parameters = computed(() => props.operation.parameters || [])
 const hasParameters = computed(() => parameters.value.length > 0)
