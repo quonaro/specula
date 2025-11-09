@@ -17,6 +17,7 @@
               :selected-operation="selectedOperation"
               @toggle-node="toggleNode"
               @select-operation="onOperationSelect"
+              @select-group="onGroupSelect"
             />
           </div>
         </div>
@@ -40,6 +41,7 @@ const props = defineProps<Props>()
 
 const emit = defineEmits<{
   (e: 'operationSelect', method: string, path: string): void
+  (e: 'groupSelect', node: TagNode): void
 }>()
 
 const expandedNodes = ref<Set<string>>(new Set())
@@ -71,6 +73,10 @@ const toggleNode = (fullPath: string) => {
 
 const onOperationSelect = (method: string, path: string) => {
   emit('operationSelect', method, path)
+}
+
+const onGroupSelect = (node: TagNode) => {
+  emit('groupSelect', node)
 }
 </script>
 

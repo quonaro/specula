@@ -55,6 +55,7 @@
           :selected-operation="selectedOperation"
           @toggle-node="(fullPath: string) => emit('toggleNode', fullPath)"
           @select-operation="(method: string, path: string) => emit('selectOperation', method, path)"
+          @select-group="(node: TagNode) => emit('selectGroup', node)"
         />
       </div>
     </div>
@@ -78,6 +79,7 @@ const props = defineProps<Props>()
 const emit = defineEmits<{
   (e: 'toggleNode', fullPath: string): void
   (e: 'selectOperation', method: string, path: string): void
+  (e: 'selectGroup', node: TagNode): void
 }>()
 
 const isExpanded = computed(() => props.expandedNodes.has(props.node.fullPath))
@@ -88,6 +90,8 @@ const nodeChildren = computed(() => Array.from(props.node.children.values()))
 const handleClick = () => {
   if (hasChildren.value || hasOperations.value) {
     emit('toggleNode', props.node.fullPath)
+    // Also emit group selection event
+    emit('selectGroup', props.node)
   }
 }
 

@@ -8,6 +8,7 @@
       :root="tagTree"
       :selected-operation="selectedOperation"
       @operation-select="handleOperationSelect"
+      @group-select="handleGroupSelect"
     />
     
     <div class="flex-1 flex flex-col h-screen">
@@ -63,8 +64,14 @@
       </header>
 
       <main class="flex-1 overflow-hidden">
+        <GroupEndpointsView
+          v-if="selectedGroup"
+          :group-node="selectedGroup"
+          :selected-operation="selectedOperation"
+          @select-operation="handleOperationSelect"
+        />
         <OperationView
-          v-if="operationDetails"
+          v-else-if="operationDetails"
           :method="operationDetails.method"
           :path="operationDetails.path"
           :operation="operationDetails.operation"
@@ -88,30 +95,111 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { Download } from 'lucide-vue-next'
 import FileUpload from '@/components/FileUpload.vue'
 import Sidebar from '@/components/Sidebar.vue'
 import OperationView from '@/components/OperationView.vue'
+import GroupEndpointsView from '@/components/GroupEndpointsView.vue'
 import ThemeToggle from '@/components/ThemeToggle.vue'
 import Button from '@/components/ui/Button.vue'
 import { useToast } from '@/composables/useToast'
 import type { OpenAPISpec, TagNode, Operation } from '@/types/openapi'
-import { parseOpenAPISpec } from '@/utils/openapi-parser'
+import { parseOpenAPISpec, findNodeByPath, findNodeBySlug, toSlug, endpointPathToSlug, slugToEndpointPath } from '@/utils/openapi-parser'
 
+const route = useRoute()
+const router = useRouter()
 const { toast } = useToast()
 const spec = ref<OpenAPISpec | null>(null)
 const tagTree = ref<TagNode | null>(null)
 const selectedOperation = ref<{ method: string; path: string } | null>(null)
+const selectedGroup = ref<TagNode | null>(null)
 
 watch(spec, (newSpec) => {
   if (newSpec) {
     const tree = parseOpenAPISpec(newSpec)
     tagTree.value = tree
+    // Restore state from URL after tree is built
+    restoreStateFromRoute()
   }
 })
 
+// Watch route changes to update state
+watch(() => route.path, () => {
+  restoreStateFromRoute()
+})
+
+// Restore state from route
+const restoreStateFromRoute = () => {
+  if (!tagTree.value) return
+  
+  const path = route.path
+  
+  if (path.startsWith('/group/')) {
+    const groupSlug = route.params.groupPath as string
+    const node = findNodeBySlug(tagTree.value, groupSlug)
+    if (node) {
+      selectedGroup.value = node
+      selectedOperation.value = null
+    } else {
+      // Group not found, redirect to home
+      router.replace('/')
+    }
+  } else if (path.startsWith('/endpoint/')) {
+    const method = (route.params.method as string).toUpperCase()
+    const endpointSlug = route.params.path as string
+    
+    // Convert slug back to endpoint path
+    const endpointPath = slugToEndpointPath(endpointSlug)
+    
+    // Verify endpoint exists in spec
+    if (spec.value && spec.value.paths[endpointPath]) {
+      const pathItem = spec.value.paths[endpointPath]
+      const operation = pathItem[method.toLowerCase() as keyof typeof pathItem]
+      if (operation) {
+        selectedOperation.value = { method, path: endpointPath }
+        selectedGroup.value = null
+      } else {
+        // Endpoint not found, redirect to home
+        router.replace('/')
+      }
+    } else {
+      // Try to find by matching slug pattern
+      // Search through all paths to find matching endpoint
+      let foundPath: string | null = null
+      if (spec.value) {
+        for (const [path, pathItem] of Object.entries(spec.value.paths)) {
+          const pathSlug = endpointPathToSlug(path)
+          if (pathSlug === endpointSlug) {
+            const op = pathItem[method.toLowerCase() as keyof typeof pathItem]
+            if (op) {
+              foundPath = path
+              break
+            }
+          }
+        }
+      }
+      
+      if (foundPath) {
+        selectedOperation.value = { method, path: foundPath }
+        selectedGroup.value = null
+      } else {
+        // Endpoint not found, redirect to home
+        router.replace('/')
+      }
+    }
+  } else if (path === '/') {
+    selectedOperation.value = null
+    selectedGroup.value = null
+  }
+}
+
 const handleSpecLoad = (loadedSpec: OpenAPISpec) => {
   spec.value = loadedSpec
+  // Reset to home when loading new spec
+  if (route.path !== '/') {
+    router.replace('/')
+  }
 }
 
 const handleDownload = () => {
@@ -136,7 +224,16 @@ const handleDownload = () => {
 }
 
 const handleOperationSelect = (method: string, path: string) => {
-  selectedOperation.value = { method, path }
+  // Update URL with slug - state will be restored from route
+  const slug = endpointPathToSlug(path)
+  const methodLower = method.toLowerCase()
+  router.push(`/endpoint/${methodLower}/${slug}`)
+}
+
+const handleGroupSelect = (node: TagNode) => {
+  // Update URL with slug - state will be restored from route
+  const slug = toSlug(node.fullPath)
+  router.push(`/group/${slug}`)
 }
 
 const operationDetails = computed(() => {

@@ -11,6 +11,8 @@ const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: '/', component: Index },
+    { path: '/group/:groupPath', component: Index },
+    { path: '/endpoint/:method/:path(.*)', component: Index },
     { path: '/:pathMatch(.*)*', component: NotFound }
   ]
 })

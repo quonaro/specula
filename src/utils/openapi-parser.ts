@@ -90,3 +90,104 @@ export function getMethodColor(method: string): string {
   };
   return colors[method.toUpperCase()] || "muted";
 }
+
+// Helper function to find a node by fullPath in the tree
+export function findNodeByPath(root: TagNode, fullPath: string): TagNode | null {
+  if (root.fullPath === fullPath) {
+    return root
+  }
+  
+  for (const child of root.children.values()) {
+    const found = findNodeByPath(child, fullPath)
+    if (found) {
+      return found
+    }
+  }
+  
+  return null
+}
+
+// Convert a string to a URL-friendly slug
+export function toSlug(text: string): string {
+  return text
+    .toLowerCase()
+    .trim()
+    // Replace spaces and special characters with hyphens
+    .replace(/[\s|_]+/g, '-')
+    // Replace multiple hyphens with single hyphen
+    .replace(/-+/g, '-')
+    // Remove special characters except hyphens
+    .replace(/[^a-z0-9-]/g, '')
+    // Remove leading and trailing hyphens
+    .replace(/^-+|-+$/g, '')
+}
+
+// Find a node by slug (searches all nodes and compares slugs)
+export function findNodeBySlug(root: TagNode, slug: string): TagNode | null {
+  // Check current node
+  if (toSlug(root.fullPath) === slug) {
+    return root
+  }
+  
+  // Check children
+  for (const child of root.children.values()) {
+    const found = findNodeBySlug(child, slug)
+    if (found) {
+      return found
+    }
+  }
+  
+  return null
+}
+
+// Convert endpoint path to slug (preserves structure but makes URL-friendly)
+export function endpointPathToSlug(path: string): string {
+  // Handle root path
+  if (path === '/' || path === '') {
+    return 'root'
+  }
+  
+  // Remove leading slash if present
+  const cleanPath = path.startsWith('/') ? path.slice(1) : path
+  
+  // Split and process each segment
+  const segments = cleanPath
+    .split('/')
+    .map(segment => {
+      // Convert path parameters {id} to :id format for readability
+      const segmentSlug = segment
+        .replace(/^{([^}]+)}$/, ':$1')
+        .replace(/[^a-zA-Z0-9:_-]/g, '-')
+        .replace(/-+/g, '-')
+        .toLowerCase()
+      return segmentSlug
+    })
+    .filter(s => s.length > 0)
+  
+  // If no segments, return 'root'
+  if (segments.length === 0) {
+    return 'root'
+  }
+  
+  return segments.join('/')
+}
+
+// Convert slug back to endpoint path
+export function slugToEndpointPath(slug: string): string {
+  // Handle root path
+  if (slug === 'root' || slug === '') {
+    return '/'
+  }
+  
+  // Convert :param back to {param} and add leading slash
+  const path = '/' + slug
+    .split('/')
+    .map(segment => {
+      if (segment.startsWith(':')) {
+        return `{${segment.slice(1)}}`
+      }
+      return segment
+    })
+    .join('/')
+  return path
+}
