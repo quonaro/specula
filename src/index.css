@@ -1,0 +1,127 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 220 13% 13%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 13% 13%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 13% 13%;
+
+    --primary: 262 83% 58%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 13% 95%;
+    --secondary-foreground: 220 13% 13%;
+
+    --muted: 220 13% 95%;
+    --muted-foreground: 220 9% 46%;
+
+    --accent: 262 83% 58%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 262 83% 58%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 220 13% 98%;
+    --sidebar-foreground: 220 13% 13%;
+    --sidebar-primary: 262 83% 58%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 13% 95%;
+    --sidebar-accent-foreground: 220 13% 13%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 262 83% 58%;
+
+    /* HTTP Method Colors */
+    --method-get: 217 91% 60%;
+    --method-post: 142 76% 36%;
+    --method-put: 25 95% 53%;
+    --method-delete: 0 84% 60%;
+    --method-patch: 271 91% 65%;
+    --method-options: 215 16% 47%;
+    --method-head: 199 89% 48%;
+    --method-trace: 330 81% 60%;
+
+    /* Code background */
+    --code-bg: 220 13% 97%;
+    --code-border: 220 13% 91%;
+  }
+
+  .dark {
+    --background: 220 26% 14%;
+    --foreground: 210 40% 98%;
+
+    --card: 220 24% 18%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 220 24% 18%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 262 83% 58%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 17% 24%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 220 17% 24%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 262 83% 58%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 17% 24%;
+    --input: 220 17% 24%;
+    --ring: 262 83% 58%;
+
+    --sidebar-background: 220 24% 12%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 262 83% 58%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 17% 20%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 220 17% 24%;
+    --sidebar-ring: 262 83% 58%;
+
+    /* HTTP Method Colors */
+    --method-get: 217 91% 70%;
+    --method-post: 142 76% 46%;
+    --method-put: 25 95% 63%;
+    --method-delete: 0 84% 70%;
+    --method-patch: 271 91% 75%;
+    --method-options: 215 20% 65%;
+    --method-head: 199 89% 58%;
+    --method-trace: 330 81% 70%;
+
+    /* Code background */
+    --code-bg: 220 24% 16%;
+    --code-border: 220 17% 28%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
