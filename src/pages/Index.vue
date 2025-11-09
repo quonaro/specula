@@ -14,7 +14,6 @@
       <header class="border-b border-border bg-card">
         <div class="h-14 flex items-center justify-between px-6">
           <div class="flex items-center gap-3">
-            <FileJson class="h-6 w-6 text-primary" />
             <div>
               <h1 class="text-lg font-semibold text-foreground">
                 {{ spec.info?.title || 'OpenAPI Specification' }}
@@ -73,7 +72,7 @@
         />
         <div v-else class="flex items-center justify-center h-full">
           <div class="text-center space-y-2">
-            <FileJson class="mx-auto h-16 w-16 text-muted-foreground" />
+            <img src="/logo.png" alt="Logo" class="mx-auto h-16 w-16 logo-image-opacity" />
             <p class="text-lg font-medium text-foreground">
               Select an operation
             </p>
@@ -89,7 +88,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { FileJson, Download } from 'lucide-vue-next'
+import { Download } from 'lucide-vue-next'
 import FileUpload from '@/components/FileUpload.vue'
 import Sidebar from '@/components/Sidebar.vue'
 import OperationView from '@/components/OperationView.vue'

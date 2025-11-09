@@ -1,7 +1,10 @@
 <template>
   <div class="w-80 border-r border-sidebar-border bg-sidebar h-screen flex flex-col">
     <div class="p-4 border-b border-sidebar-border">
-      <h2 class="text-lg font-semibold text-sidebar-foreground">Navigation</h2>
+      <div class="flex items-center gap-2">
+        <img src="/logo.png" alt="Logo" class="h-8 logo-image" />
+        <span class="text-lg font-semibold text-sidebar-foreground">Specula</span>
+      </div>
     </div>
     <ScrollArea class="flex-1">
       <div class="p-2">

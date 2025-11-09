@@ -125,3 +125,23 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  /* Logo filters for dark theme */
+  .logo-image {
+    @apply object-contain;
+  }
+  
+  .dark .logo-image {
+    filter: brightness(1.3) contrast(1.1);
+  }
+  
+  /* For empty state logo with opacity */
+  .logo-image-opacity {
+    @apply object-contain opacity-50;
+  }
+  
+  .dark .logo-image-opacity {
+    filter: brightness(1.5) contrast(1.2);
+  }
+}

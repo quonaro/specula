@@ -2,8 +2,10 @@
   <div class="flex min-h-screen items-center justify-center bg-background p-6">
     <div class="w-full max-w-2xl space-y-6">
       <div class="text-center space-y-2">
-        <FileJson class="mx-auto h-16 w-16 text-primary" />
-        <h1 class="text-4xl font-bold tracking-tight">OpenAPI Viewer</h1>
+        <div class="flex items-center justify-center gap-3">
+          <img src="/logo.png" alt="Logo" class="h-16 logo-image" />
+          <h1 class="text-4xl font-bold tracking-tight">Specula</h1>
+        </div>
         <p class="text-muted-foreground">
           Load your OpenAPI 3.0+ specification to explore
         </p>
@@ -67,7 +69,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { Upload, FileJson } from 'lucide-vue-next'
+import { Upload } from 'lucide-vue-next'
 import Button from './ui/Button.vue'
 import Textarea from './ui/Textarea.vue'
 import { useToast } from '@/composables/useToast'

@@ -24,8 +24,10 @@ export function parseOpenAPISpec(spec: OpenAPISpec): TagNode {
           : tags;
         
         processedTags.forEach((tag: string) => {
+          // Normalize tag: remove spaces around "|" to handle all variants (auth | login, auth|login, etc.)
+          const normalizedTag = tag.replace(/\s*\|\s*/g, "|");
           // Split tag by "|" to create hierarchy
-          const parts = tag.split("|").map(p => p.trim()).filter(p => p.length > 0);
+          const parts = normalizedTag.split("|").map(p => p.trim()).filter(p => p.length > 0);
           
           if (parts.length === 0) {
             // Handle edge case: empty tag
