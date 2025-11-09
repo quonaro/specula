@@ -32,7 +32,7 @@
 
       <!-- Try It Out -->
       <Separator />
-      <TryItOut :method="method" :path="path" :operation="operation" :spec="spec" />
+      <TryItOut :method="method" :path="path" :operation="operation" :spec="spec" :source-url="sourceUrl" />
 
       <!-- Operation-specific Servers -->
       <template v-if="operation.servers && operation.servers.length > 0">
@@ -302,6 +302,7 @@ interface Props {
   path: string
   operation: Operation
   spec: OpenAPISpec
+  sourceUrl?: string
 }
 
 const props = defineProps<Props>()

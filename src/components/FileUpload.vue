@@ -167,15 +167,26 @@
                     {{ favorite.hash }}
                   </div>
                 </label>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  class="h-5 w-5 text-yellow-500 hover:text-yellow-600"
-                  @click.stop="removeFromFavorites(favorite.hash)"
-                  title="Remove from favorites"
-                >
-                  <Star class="h-3 w-3 fill-current" />
-                </Button>
+                <div class="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    class="h-5 w-5 text-muted-foreground hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity"
+                    @click.stop="downloadSpec(favorite.spec)"
+                    title="Download"
+                  >
+                    <Download class="h-3 w-3" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    class="h-5 w-5 text-yellow-500 hover:text-yellow-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                    @click.stop="removeFromFavorites(favorite.hash)"
+                    title="Remove from favorites"
+                  >
+                    <Star class="h-3 w-3 fill-current" />
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
@@ -221,7 +232,16 @@
                   <Button
                     variant="ghost"
                     size="icon"
-                    class="h-5 w-5 text-muted-foreground hover:text-yellow-500"
+                    class="h-5 w-5 text-muted-foreground hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity"
+                    @click.stop="downloadSpec(item.spec)"
+                    title="Download"
+                  >
+                    <Download class="h-3 w-3" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    class="h-5 w-5 text-muted-foreground hover:text-yellow-500 opacity-0 group-hover:opacity-100 transition-opacity"
                     @click.stop="addHistoryToFavorites(item.id)"
                     title="Add to favorites"
                   >
@@ -270,14 +290,25 @@
                   </div>
                   <div class="text-xs text-muted-foreground">Hash: {{ hash }}</div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  class="h-8 w-8"
-                  @click="removeFromSelected('favorites', hash)"
-                >
-                  <X class="h-4 w-4" />
-                </Button>
+                <div class="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    class="h-8 w-8 text-muted-foreground hover:text-primary"
+                    @click.stop="downloadSpecByHash(hash)"
+                    title="Download"
+                  >
+                    <Download class="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    class="h-8 w-8"
+                    @click="removeFromSelected('favorites', hash)"
+                  >
+                    <X class="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
@@ -297,14 +328,25 @@
                   </div>
                   <div class="text-xs text-muted-foreground">Hash: {{ hash }}</div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  class="h-8 w-8"
-                  @click="removeFromSelected('cache', hash)"
-                >
-                  <X class="h-4 w-4" />
-                </Button>
+                <div class="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    class="h-8 w-8 text-muted-foreground hover:text-primary"
+                    @click.stop="downloadSpecByHash(hash)"
+                    title="Download"
+                  >
+                    <Download class="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    class="h-8 w-8"
+                    @click="removeFromSelected('cache', hash)"
+                  >
+                    <X class="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
@@ -324,14 +366,25 @@
                   </div>
                   <div class="text-xs text-muted-foreground">From history</div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  class="h-8 w-8"
-                  @click="removeFromSelected('history', id)"
-                >
-                  <X class="h-4 w-4" />
-                </Button>
+                <div class="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    class="h-8 w-8 text-muted-foreground hover:text-primary"
+                    @click.stop="downloadSpecById(id)"
+                    title="Download"
+                  >
+                    <Download class="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    class="h-8 w-8"
+                    @click="removeFromSelected('history', id)"
+                  >
+                    <X class="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
@@ -351,14 +404,25 @@
                   </div>
                   <div class="text-xs text-muted-foreground">URL</div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  class="h-8 w-8"
-                  @click="removeFromSelected('urls', index)"
-                >
-                  <X class="h-4 w-4" />
-                </Button>
+                <div class="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    class="h-8 w-8 text-muted-foreground hover:text-primary"
+                    @click.stop="downloadSpecByUrl(urlList[index])"
+                    title="Download"
+                  >
+                    <Download class="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    class="h-8 w-8"
+                    @click="removeFromSelected('urls', index)"
+                  >
+                    <X class="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
@@ -380,14 +444,25 @@
                     v{{ file.spec.info?.version || '1.0.0' }} | OpenAPI {{ file.spec.openapi }}
                   </div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  class="h-8 w-8"
-                  @click="removeLoadedFile(index)"
-                >
-                  <X class="h-4 w-4" />
-                </Button>
+                <div class="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    class="h-8 w-8 text-muted-foreground hover:text-primary"
+                    @click.stop="downloadSpec(file.spec)"
+                    title="Download"
+                  >
+                    <Download class="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    class="h-8 w-8"
+                    @click="removeLoadedFile(index)"
+                  >
+                    <X class="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
@@ -420,7 +495,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { Upload, X, Star, ChevronDown } from 'lucide-vue-next'
+import { Upload, X, Star, ChevronDown, Download } from 'lucide-vue-next'
 import Button from './ui/Button.vue'
 import Input from './ui/Input.vue'
 import Textarea from './ui/Textarea.vue'
@@ -699,6 +774,92 @@ const removeFromFavorites = (hash: string) => {
       title: 'Removed from favorites',
       description: `${cached.title} has been removed from favorites`,
     })
+  }
+}
+
+// Sanitize filename by removing invalid characters
+const sanitizeFileName = (name: string): string => {
+  // Remove invalid characters for filenames: / \ : * ? " < > |
+  return name.replace(/[/\\:*?"<>|]/g, '_').trim() || 'openapi'
+}
+
+// Download a single specification
+const downloadSpec = (spec: OpenAPISpec) => {
+  const fileName = sanitizeFileName(spec.info?.title || 'openapi')
+  const blob = new Blob([JSON.stringify(spec, null, 2)], {
+    type: 'application/json',
+  })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${fileName}.json`
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
+  
+  toast({
+    title: 'Downloaded',
+    description: `${spec.info?.title || 'Specification'} downloaded successfully`,
+  })
+}
+
+// Download spec by hash (from cache)
+const downloadSpecByHash = (hash: string) => {
+  const cached = specCacheStore.getCachedSpec(hash)
+  if (cached) {
+    downloadSpec(cached.spec)
+  } else {
+    toast({
+      title: 'Not found',
+      description: 'Specification not found in cache',
+      variant: 'destructive',
+    })
+  }
+}
+
+// Download spec by history id
+const downloadSpecById = (id: string) => {
+  const spec = specHistoryStore.getSpecById(id)
+  if (spec) {
+    downloadSpec(spec)
+  } else {
+    toast({
+      title: 'Not found',
+      description: 'Specification not found in history',
+      variant: 'destructive',
+    })
+  }
+}
+
+// Download spec by URL
+const downloadSpecByUrl = async (url: string) => {
+  try {
+    isLoadingUrl.value = true
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+      },
+    })
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    
+    const spec = await response.json()
+    const validated = validateAndLoad(spec, false, url)
+    if (validated) {
+      downloadSpec(validated.spec)
+    }
+  } catch (error: any) {
+    toast({
+      title: 'Failed to download',
+      description: `Could not download from ${url}: ${error.message || 'Unknown error'}`,
+      variant: 'destructive',
+    })
+  } finally {
+    isLoadingUrl.value = false
   }
 }
 

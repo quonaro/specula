@@ -19,10 +19,54 @@
             <Unlock v-else class="w-4 h-4" />
           </Button>
         </div>
+        <div v-if="availableServers.length > 0" class="space-y-2">
+          <div class="space-y-2 border border-border rounded-md p-3 bg-muted/30">
+            <div
+              v-for="(server, idx) in availableServers"
+              :key="idx"
+              class="flex items-center gap-2"
+            >
+              <input
+                type="radio"
+                :id="`server-${idx}`"
+                :value="server.url"
+                :checked="selectedServer === server.url"
+                @change="handleServerSelect(server.url)"
+                class="h-4 w-4 text-primary focus:ring-primary"
+              />
+              <label
+                :for="`server-${idx}`"
+                class="flex-1 text-sm cursor-pointer"
+              >
+                <div class="font-medium text-foreground">{{ server.url }}</div>
+                <div v-if="server.label.includes('(')" class="text-xs text-muted-foreground">
+                  {{ server.label.match(/\(([^)]+)\)/)?.[1] || '' }}
+                </div>
+              </label>
+            </div>
+            <div class="flex items-center gap-2 pt-2 border-t border-border">
+              <input
+                type="radio"
+                id="server-custom"
+                value="custom"
+                :checked="selectedServer === 'custom'"
+                @change="handleServerSelect('custom')"
+                class="h-4 w-4 text-primary focus:ring-primary"
+              />
+              <label
+                for="server-custom"
+                class="flex-1 text-sm cursor-pointer font-medium text-foreground"
+              >
+                Custom URL...
+              </label>
+            </div>
+          </div>
+        </div>
         <Input
-          :model-value="selectedServer"
-          @update:model-value="selectedServer = $event"
-          :disabled="isServerUrlLocked"
+          v-if="!isServerUrlLocked || selectedServer === 'custom' || availableServers.length === 0"
+          :model-value="getCurrentServerUrl()"
+          @update:model-value="handleServerUrlUpdate"
+          :disabled="isServerUrlLocked && selectedServer !== 'custom' && availableServers.length > 0"
           placeholder="https://api.example.com"
         />
       </div>
@@ -167,6 +211,7 @@ interface Props {
   path: string
   operation: Operation
   spec: OpenAPISpec
+  sourceUrl?: string
 }
 
 const props = defineProps<Props>()
@@ -179,10 +224,130 @@ const copied = ref(false)
 const responseTab = ref('body')
 const paramValues = ref<Record<string, string>>({})
 const requestBody = ref('{}')
-const selectedServer = ref(
-  props.operation.servers?.[0]?.url || props.spec.servers?.[0]?.url || ''
-)
+const customServerUrl = ref('')
 const isServerUrlLocked = ref(true)
+
+// Extract base URL from sourceUrl if it's a URL
+const extractBaseUrl = (url: string): string | null => {
+  try {
+    const urlObj = new URL(url)
+    return `${urlObj.protocol}//${urlObj.host}`
+  } catch {
+    return null
+  }
+}
+
+// Build list of available servers
+const availableServers = computed(() => {
+  const servers: Array<{ url: string; label: string }> = []
+  
+  // Add operation-specific servers
+  if (props.operation.servers && props.operation.servers.length > 0) {
+    props.operation.servers.forEach((server, idx) => {
+      servers.push({
+        url: server.url,
+        label: server.description 
+          ? `${server.url} (${server.description})` 
+          : server.url
+      })
+    })
+  }
+  
+  // Add spec-level servers
+  if (props.spec.servers && props.spec.servers.length > 0) {
+    props.spec.servers.forEach((server, idx) => {
+      // Avoid duplicates
+      if (!servers.some(s => s.url === server.url)) {
+        servers.push({
+          url: server.url,
+          label: server.description 
+            ? `${server.url} (${server.description})` 
+            : server.url
+        })
+      }
+    })
+  }
+  
+  // Add sourceUrl base URL if available
+  if (props.sourceUrl) {
+    const baseUrl = extractBaseUrl(props.sourceUrl)
+    if (baseUrl && !servers.some(s => s.url === baseUrl)) {
+      servers.push({
+        url: baseUrl,
+        label: `${baseUrl} (from spec URL)`
+      })
+    }
+  }
+  
+  return servers
+})
+
+// Initialize selected server
+const getInitialServer = (): string => {
+  if (props.operation.servers && props.operation.servers.length > 0) {
+    return props.operation.servers[0].url
+  }
+  if (props.spec.servers && props.spec.servers.length > 0) {
+    return props.spec.servers[0].url
+  }
+  if (props.sourceUrl) {
+    const baseUrl = extractBaseUrl(props.sourceUrl)
+    if (baseUrl) {
+      return baseUrl
+    }
+  }
+  return ''
+}
+
+const selectedServer = ref(getInitialServer())
+
+// Handle server selection from dropdown
+const handleServerSelect = (value: string) => {
+  selectedServer.value = value
+  if (value === 'custom') {
+    customServerUrl.value = ''
+  }
+}
+
+// Handle server URL input update
+const handleServerUrlUpdate = (value: string) => {
+  if (selectedServer.value === 'custom') {
+    customServerUrl.value = value
+  } else if (!isServerUrlLocked.value) {
+    // When unlocked, allow editing any URL
+    // Check if the entered URL matches any available server
+    const matchingServer = availableServers.value.find(s => s.url === value)
+    if (matchingServer) {
+      // If it matches a server, select that server
+      selectedServer.value = matchingServer.url
+    } else if (value.trim() !== '') {
+      // If it doesn't match and is not empty, select custom
+      selectedServer.value = 'custom'
+      customServerUrl.value = value
+    } else {
+      // Empty value - keep current selection
+      selectedServer.value = value
+    }
+  } else {
+    // When locked, check if value matches any server
+    const matchingServer = availableServers.value.find(s => s.url === value)
+    if (matchingServer) {
+      selectedServer.value = matchingServer.url
+    } else if (value.trim() !== '') {
+      // If it doesn't match, switch to custom
+      selectedServer.value = 'custom'
+      customServerUrl.value = value
+    }
+  }
+}
+
+// Get current server URL for display
+const getCurrentServerUrl = (): string => {
+  if (selectedServer.value === 'custom') {
+    return customServerUrl.value
+  }
+  return selectedServer.value
+}
 
 const parameters = computed(() => props.operation.parameters || [])
 const hasParameters = computed(() => parameters.value.length > 0)
@@ -197,7 +362,18 @@ const handleExecute = async () => {
   response.value = null
 
   try {
-    let url = selectedServer.value + props.path
+    const serverUrl = selectedServer.value === 'custom' ? customServerUrl.value : selectedServer.value
+    if (!serverUrl) {
+      toast({
+        title: 'Server URL required',
+        description: 'Please select or enter a server URL',
+        variant: 'destructive',
+      })
+      isExecuting.value = false
+      return
+    }
+    
+    let url = serverUrl + props.path
     const queryParams: string[] = []
 
     parameters.value.forEach((param) => {
@@ -281,10 +457,11 @@ const handleExecute = async () => {
       description: `Request completed in ${duration}ms`,
     })
   } catch (error: any) {
+    const serverUrl = selectedServer.value === 'custom' ? customServerUrl.value : selectedServer.value
     response.value = {
       error: true,
       message: error.message,
-      url: selectedServer.value + props.path,
+      url: (serverUrl || '') + props.path,
     }
     
     toast({
