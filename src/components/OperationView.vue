@@ -295,6 +295,7 @@ import { computed } from 'vue'
 import type { Operation, OpenAPISpec, PathItem } from '@/types/openapi'
 import { RefResolver } from '@/utils/ref-resolver'
 import { isOperationPrivate } from '@/utils/openapi-parser'
+import { getMethodColorClass } from '@/utils/operation-cache'
 import Badge from './ui/Badge.vue'
 import Card from './ui/Card.vue'
 import ScrollArea from './ui/ScrollArea.vue'
@@ -330,19 +331,5 @@ const pathItem = computed(() => {
 const isPrivate = computed(() => {
   return isOperationPrivate(props.operation, pathItem.value, props.spec)
 })
-
-const getMethodColorClass = (method: string) => {
-  const colorMap: Record<string, string> = {
-    GET: 'bg-method-get',
-    POST: 'bg-method-post',
-    PUT: 'bg-method-put',
-    DELETE: 'bg-method-delete',
-    PATCH: 'bg-method-patch',
-    OPTIONS: 'bg-method-options',
-    HEAD: 'bg-method-head',
-    TRACE: 'bg-method-trace',
-  }
-  return colorMap[method.toUpperCase()] || 'bg-muted'
-}
 </script>
 

@@ -19,19 +19,18 @@
         <div class="grid gap-3">
           <div
             v-for="(endpoint, index) in allEndpoints"
+            v-memo="[endpoint.method, endpoint.path, endpoint.isSelected, endpoint.isPrivate]"
             :key="`${endpoint.method}-${endpoint.path}-${index}`"
             :class="[
               'flex items-center gap-3 p-4 rounded-lg border border-border bg-card hover:bg-accent/50 cursor-pointer transition-colors',
-              isSelected(endpoint.method, endpoint.path)
-                ? 'border-primary bg-primary/5'
-                : ''
+              endpoint.itemClass
             ]"
             @click="handleEndpointClick(endpoint.method, endpoint.path)"
           >
             <span
               :class="[
                 'text-xs font-bold px-2.5 py-1 rounded text-white shrink-0',
-                getMethodColorClass(endpoint.method)
+                endpoint.colorClass
               ]"
             >
               {{ endpoint.method }}
@@ -44,7 +43,7 @@
                 {{ endpoint.path }}
                 <div
                   class="w-2 h-2 rounded-full shrink-0"
-                  :class="isEndpointPrivate(endpoint) ? 'bg-red-500' : 'bg-green-500'"
+                  :class="endpoint.privacyClass"
                 ></div>
               </div>
               <div v-if="endpoint.operation.summary" class="text-xs text-muted-foreground mt-1">
@@ -80,9 +79,10 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { storeToRefs } from 'pinia'
 import type { TagNode } from '@/types/openapi'
 import Badge from './ui/Badge.vue'
-import { isOperationPrivate } from '@/utils/openapi-parser'
+import { getMethodColorClass, checkOperationPrivacy } from '@/utils/operation-cache'
 import { useSpecStore } from '@/stores/spec'
 
 interface Props {
@@ -95,6 +95,9 @@ const props = defineProps<Props>()
 const emit = defineEmits<{
   (e: 'selectOperation', method: string, path: string): void
 }>()
+
+const specStore = useSpecStore()
+const { specs } = storeToRefs(specStore)
 
 // Function to recursively collect all endpoints from the group and its subgroups
 function collectAllEndpoints(node: TagNode): Array<{
@@ -119,52 +122,34 @@ function collectAllEndpoints(node: TagNode): Array<{
   return endpoints
 }
 
+// Pre-compute all endpoints with their metadata to avoid function calls in template
 const allEndpoints = computed(() => {
-  return collectAllEndpoints(props.groupNode)
+  const endpoints = collectAllEndpoints(props.groupNode)
+  const selected = props.selectedOperation
+  const selectedMethod = selected?.method
+  const selectedPath = selected?.path
+  const specsValue = specs.value
+
+  return endpoints.map(endpoint => {
+    const isSelected = selectedMethod === endpoint.method && selectedPath === endpoint.path
+    const isPrivate = checkOperationPrivacy({ method: endpoint.method, path: endpoint.path }, specsValue)
+    
+    return {
+      ...endpoint,
+      isSelected,
+      isPrivate,
+      colorClass: getMethodColorClass(endpoint.method),
+      // Pre-compute class strings
+      itemClass: isSelected
+        ? 'border-primary bg-primary/5'
+        : '',
+      privacyClass: isPrivate ? 'bg-red-500' : 'bg-green-500'
+    }
+  })
 })
-
-const isSelected = (method: string, path: string) => {
-  return props.selectedOperation?.method === method && props.selectedOperation?.path === path
-}
-
-const getMethodColorClass = (method: string) => {
-  const colorMap: Record<string, string> = {
-    GET: 'bg-method-get',
-    POST: 'bg-method-post',
-    PUT: 'bg-method-put',
-    DELETE: 'bg-method-delete',
-    PATCH: 'bg-method-patch',
-    OPTIONS: 'bg-method-options',
-    HEAD: 'bg-method-head',
-    TRACE: 'bg-method-trace',
-  }
-  return colorMap[method.toUpperCase()] || 'bg-muted'
-}
 
 const handleEndpointClick = (method: string, path: string) => {
   emit('selectOperation', method, path)
-}
-
-const specStore = useSpecStore()
-
-// Check if endpoint is private
-const isEndpointPrivate = (endpoint: {
-  method: string
-  path: string
-  operation: any
-}) => {
-  // Find the spec that contains this operation
-  for (const specWithSource of specStore.specs) {
-    const pathItem = specWithSource.spec.paths[endpoint.path]
-    if (pathItem) {
-      const operation = pathItem[endpoint.method.toLowerCase() as keyof typeof pathItem]
-      if (operation) {
-        // Use operation from pathItem to ensure we have the correct object
-        return isOperationPrivate(operation, pathItem, specWithSource.spec)
-      }
-    }
-  }
-  return false
 }
 </script>
 

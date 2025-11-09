@@ -134,6 +134,7 @@ import { useSpecHistoryStore } from '@/stores/specHistory'
 import { useLastWorkspaceStore } from '@/stores/lastWorkspace'
 import type { OpenAPISpec, TagNode, Operation } from '@/types/openapi'
 import { parseOpenAPISpec, parseMultipleSpecs, findNodeByPath, findNodeBySlug, toSlug, endpointPathToSlug, slugToEndpointPath } from '@/utils/openapi-parser'
+import { clearOperationCaches } from '@/utils/operation-cache'
 
 const route = useRoute()
 const router = useRouter()
@@ -163,10 +164,11 @@ const getSpecIdFromQuery = (): string | null => {
 }
 
 // Find hash for a specific spec by comparing the spec object
+// Optimized: prefer reference equality over JSON.stringify
 const findSpecHash = (targetSpec: OpenAPISpec): string | null => {
-  // First, try to find in current specs by comparing
+  // First, try to find in current specs by reference comparison (fastest)
   for (const specWithSource of specStore.specs) {
-    if (specWithSource.spec === targetSpec || JSON.stringify(specWithSource.spec) === JSON.stringify(targetSpec)) {
+    if (specWithSource.spec === targetSpec) {
       // If it has sourceUrl, try to find hash from query params
       if (specWithSource.sourceUrl) {
         const specParams = route.query.spec
@@ -183,23 +185,35 @@ const findSpecHash = (targetSpec: OpenAPISpec): string | null => {
         }
       }
       
-      // Try to find in cache by comparing
+      // Try to find in cache by reference
       const cachedSpecs = Array.from(specCacheStore.cache.values())
-      const cached = cachedSpecs.find(c => 
-        JSON.stringify(c.spec) === JSON.stringify(targetSpec)
-      )
+      const cached = cachedSpecs.find(c => c.spec === targetSpec)
       if (cached) {
         return cached.hash
       }
     }
   }
   
-  // Fallback: search in cache
+  // Fallback: search in cache by reference (still faster than JSON.stringify)
   const cachedSpecs = Array.from(specCacheStore.cache.values())
-  const cached = cachedSpecs.find(c => 
-    JSON.stringify(c.spec) === JSON.stringify(targetSpec)
-  )
-  return cached ? cached.hash : null
+  const cached = cachedSpecs.find(c => c.spec === targetSpec)
+  if (cached) {
+    return cached.hash
+  }
+  
+  // Last resort: use JSON.stringify only if reference comparison failed
+  // This should rarely happen if specs are properly managed
+  const cachedByContent = cachedSpecs.find(c => {
+    // Quick check: compare basic properties first
+    if (c.spec.info?.title !== targetSpec.info?.title ||
+        c.spec.info?.version !== targetSpec.info?.version ||
+        c.spec.openapi !== targetSpec.openapi) {
+      return false
+    }
+    // Only then do expensive JSON comparison
+    return JSON.stringify(c.spec) === JSON.stringify(targetSpec)
+  })
+  return cachedByContent ? cachedByContent.hash : null
 }
 
 // Restore state from route
@@ -457,16 +471,29 @@ const updateUrlWithSpecs = (specs: typeof specStore.specs) => {
   
   // Build spec parameters array
   const specParams: string[] = []
+  const cachedSpecs = Array.from(specCacheStore.cache.values())
+  
   for (const specWithSource of specs) {
     if (specWithSource.sourceUrl) {
       // Use sourceUrl if available
       specParams.push(specWithSource.sourceUrl)
     } else {
-      // Try to find hash in cache
-      const cachedSpecs = Array.from(specCacheStore.cache.values())
-      const cached = cachedSpecs.find(c => 
-        JSON.stringify(c.spec) === JSON.stringify(specWithSource.spec)
-      )
+      // Try to find hash in cache by reference first (faster)
+      let cached = cachedSpecs.find(c => c.spec === specWithSource.spec)
+      
+      // Fallback to content comparison only if reference doesn't match
+      if (!cached) {
+        cached = cachedSpecs.find(c => {
+          // Quick check first
+          if (c.spec.info?.title !== specWithSource.spec.info?.title ||
+              c.spec.info?.version !== specWithSource.spec.info?.version ||
+              c.spec.openapi !== specWithSource.spec.openapi) {
+            return false
+          }
+          return JSON.stringify(c.spec) === JSON.stringify(specWithSource.spec)
+        })
+      }
+      
       if (cached) {
         specParams.push(cached.hash)
       }
@@ -570,7 +597,24 @@ const loadSpecsFromUrl = async () => {
   }
 }
 
-watch(() => specStore.specs, (newSpecs) => {
+watch(() => specStore.specs, (newSpecs, oldSpecs) => {
+  // Clear operation caches when specs change
+  if (oldSpecs && oldSpecs.length > 0 && newSpecs.length > 0) {
+    // Check if specs actually changed (not just reference)
+    const specsChanged = newSpecs.length !== oldSpecs.length ||
+      newSpecs.some((newSpec, index) => {
+        const oldSpec = oldSpecs[index]
+        return !oldSpec || newSpec.spec !== oldSpec.spec
+      })
+    
+    if (specsChanged) {
+      clearOperationCaches()
+    }
+  } else if (newSpecs.length === 0 && oldSpecs && oldSpecs.length > 0) {
+    // Clear cache when all specs are removed
+    clearOperationCaches()
+  }
+  
   if (newSpecs.length > 0) {
     if (newSpecs.length === 1) {
       // Single spec - use regular parsing

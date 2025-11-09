@@ -20,23 +20,22 @@
     </div>
 
     <div v-if="isExpanded && node.name !== 'root'" class="animate-in slide-in-from-top-2 duration-200">
-      <!-- Render operations -->
+      <!-- Render operations with v-memo for maximum performance -->
       <div
-        v-for="op in node.operations"
+        v-for="op in operationsWithPrivacy"
+        v-memo="[op.method, op.path, op.isSelected, op.isPrivate]"
         :key="`${op.method}-${op.path}`"
         :class="[
           'flex items-center gap-2 px-3 py-2 rounded-md cursor-pointer transition-colors',
-          isSelected(op.method, op.path)
-            ? 'bg-primary/10 text-primary'
-            : 'hover:bg-sidebar-accent'
+          op.itemClass
         ]"
-        :style="{ paddingLeft: `${(level + 1) * 12 + 12}px` }"
-        @click="$emit('selectOperation', op.method, op.path)"
+        :style="{ paddingLeft: paddingStyle }"
+        @click="handleSelectOperation(op.method, op.path)"
       >
         <span
           :class="[
             'text-xs font-bold px-2 py-0.5 rounded text-white',
-            getMethodColorClass(op.method)
+            op.colorClass
           ]"
         >
           {{ op.method }}
@@ -49,20 +48,23 @@
         </span>
         <div
           class="w-2 h-2 rounded-full shrink-0"
-          :class="checkIfPrivate(op) ? 'bg-red-500' : 'bg-green-500'"
+          :class="op.privacyClass"
         ></div>
       </div>
 
       <!-- Render child nodes -->
-      <div v-for="child in nodeChildren" :key="child.fullPath">
+      <div
+        v-for="child in nodeChildren"
+        :key="child.fullPath"
+      >
         <SidebarNode
           :node="child"
           :level="level + 1"
           :expanded-nodes="expandedNodes"
           :selected-operation="selectedOperation"
-          @toggle-node="(fullPath: string) => emit('toggleNode', fullPath)"
-          @select-operation="(method: string, path: string) => emit('selectOperation', method, path)"
-          @select-group="(node: TagNode) => emit('selectGroup', node)"
+          @toggle-node="handleToggleNode"
+          @select-operation="handleSelectOperation"
+          @select-group="handleSelectGroup"
         />
       </div>
     </div>
@@ -71,9 +73,10 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { storeToRefs } from 'pinia'
 import { ChevronRight, ChevronDown } from 'lucide-vue-next'
 import type { TagNode } from '@/types/openapi'
-import { isOperationPrivate } from '@/utils/openapi-parser'
+import { getMethodColorClass, checkOperationPrivacy } from '@/utils/operation-cache'
 import { useSpecStore } from '@/stores/spec'
 
 interface Props {
@@ -91,53 +94,78 @@ const emit = defineEmits<{
   (e: 'selectGroup', node: TagNode): void
 }>()
 
-const isExpanded = computed(() => props.expandedNodes.has(props.node.fullPath))
+const specStore = useSpecStore()
+// Use storeToRefs to avoid unnecessary reactivity
+const { specs } = storeToRefs(specStore)
+
+// Memoize these simple computed values
+// CRITICAL: Vue has issues tracking Set mutations directly
+// We serialize the Set to ensure reactivity works correctly
+const expandedNodesSerialized = computed(() => {
+  return Array.from(props.expandedNodes).sort().join('|')
+})
+
+const isExpanded = computed(() => {
+  // Access serialized version to ensure reactivity
+  expandedNodesSerialized.value
+  return props.expandedNodes.has(props.node.fullPath)
+})
 const hasChildren = computed(() => props.node.children.size > 0)
 const hasOperations = computed(() => props.node.operations.length > 0)
-const nodeChildren = computed(() => Array.from(props.node.children.values()))
+
+// Cache nodeChildren array - only recreate when children Map changes
+const nodeChildren = computed(() => {
+  // Use Array.from with cached reference
+  const children = props.node.children
+  return Array.from(children.values())
+})
+
+// Pre-compute operations with all needed data to avoid any function calls in template
+// Optimized: only recalculates when operations, selectedOperation, or specs actually change
+const operationsWithPrivacy = computed(() => {
+  const selected = props.selectedOperation
+  const selectedMethod = selected?.method
+  const selectedPath = selected?.path
+  const specsValue = specs.value
+  
+  return props.node.operations.map(op => {
+    const isSelected = selectedMethod === op.method && selectedPath === op.path
+    const isPrivate = checkOperationPrivacy({ method: op.method, path: op.path }, specsValue)
+    return {
+      ...op,
+      isPrivate,
+      isSelected,
+      colorClass: getMethodColorClass(op.method),
+      // Pre-compute class strings to avoid template calculations
+      itemClass: isSelected
+        ? 'bg-primary/10 text-primary'
+        : 'hover:bg-sidebar-accent',
+      privacyClass: isPrivate ? 'bg-red-500' : 'bg-green-500'
+    }
+  })
+})
+
+// Pre-compute padding style to avoid template calculations
+const paddingStyle = computed(() => `${(props.level + 1) * 12 + 12}px`)
 
 const handleClick = () => {
   if (hasChildren.value || hasOperations.value) {
     emit('toggleNode', props.node.fullPath)
-    // Also emit group selection event
     emit('selectGroup', props.node)
   }
 }
 
-const isSelected = (method: string, path: string) => {
-  return props.selectedOperation?.method === method && props.selectedOperation?.path === path
+// Pre-defined handlers to avoid creating new functions on each render
+const handleToggleNode = (fullPath: string) => {
+  emit('toggleNode', fullPath)
 }
 
-const getMethodColorClass = (method: string) => {
-  const colorMap: Record<string, string> = {
-    GET: 'bg-method-get',
-    POST: 'bg-method-post',
-    PUT: 'bg-method-put',
-    DELETE: 'bg-method-delete',
-    PATCH: 'bg-method-patch',
-    OPTIONS: 'bg-method-options',
-    HEAD: 'bg-method-head',
-    TRACE: 'bg-method-trace',
-  }
-  return colorMap[method.toUpperCase()] || 'bg-muted'
+const handleSelectOperation = (method: string, path: string) => {
+  emit('selectOperation', method, path)
 }
 
-const specStore = useSpecStore()
-
-// Check if operation is private
-const checkIfPrivate = (op: { method: string; path: string; operation: any }) => {
-  // Find the spec that contains this operation
-  for (const specWithSource of specStore.specs) {
-    const pathItem = specWithSource.spec.paths[op.path]
-    if (pathItem) {
-      const operation = pathItem[op.method.toLowerCase() as keyof typeof pathItem]
-      if (operation) {
-        // Use operation from pathItem to ensure we have the correct object
-        return isOperationPrivate(operation, pathItem, specWithSource.spec)
-      }
-    }
-  }
-  return false
+const handleSelectGroup = (node: TagNode) => {
+  emit('selectGroup', node)
 }
 </script>
 

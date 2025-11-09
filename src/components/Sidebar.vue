@@ -9,7 +9,10 @@
     <ScrollArea class="flex-1">
       <div class="p-2">
         <div v-if="root.name === 'root'">
-          <div v-for="child in rootChildren" :key="child.fullPath">
+          <div
+            v-for="child in rootChildren"
+            :key="child.fullPath"
+          >
             <SidebarNode
               :node="child"
               :level="0"
@@ -46,8 +49,10 @@ const emit = defineEmits<{
 
 const expandedNodes = ref<Set<string>>(new Set())
 
+// Memoize rootChildren - only recalculate when root.children changes
 const rootChildren = computed(() => {
-  return Array.from(props.root.children.values())
+  const children = props.root.children
+  return Array.from(children.values())
 })
 
 onMounted(() => {
@@ -57,17 +62,38 @@ onMounted(() => {
   }
 })
 
-watch(expandedNodes, (newVal) => {
-  localStorage.setItem('expandedNodes', JSON.stringify(Array.from(newVal)))
-}, { deep: true })
+// Watch Set changes with debounced save to avoid excessive localStorage writes
+// Track both size and a serialized version to catch content changes
+let saveTimeout: ReturnType<typeof setTimeout> | null = null
+const saveToLocalStorage = () => {
+  localStorage.setItem('expandedNodes', JSON.stringify(Array.from(expandedNodes.value)))
+}
+
+watch(() => {
+  // Create a serialized version to track content changes, not just size
+  return Array.from(expandedNodes.value).sort().join(',')
+}, () => {
+  if (saveTimeout) clearTimeout(saveTimeout)
+  saveTimeout = setTimeout(saveToLocalStorage, 300) // Debounce: save 300ms after last change
+}, { flush: 'post' })
 
 const toggleNode = (fullPath: string) => {
-  const newExpanded = new Set(expandedNodes.value)
+  // Create a completely new Set to ensure Vue reactivity detects the change
+  // This is critical - Vue needs a new reference to detect Set changes
+  const current = expandedNodes.value
+  const newExpanded = new Set<string>()
+  
+  // Copy all existing items
+  current.forEach(item => newExpanded.add(item))
+  
+  // Toggle the specific item
   if (newExpanded.has(fullPath)) {
     newExpanded.delete(fullPath)
   } else {
     newExpanded.add(fullPath)
   }
+  
+  // Assign new Set - Vue will detect the reference change
   expandedNodes.value = newExpanded
 }
 
