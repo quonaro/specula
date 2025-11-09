@@ -6,15 +6,10 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
 import { Moon, Sun } from 'lucide-vue-next'
 import Button from './ui/Button.vue'
 import { useThemeStore } from '@/stores/theme'
 
 const themeStore = useThemeStore()
-
-onMounted(() => {
-  themeStore.initTheme()
-})
 </script>
 

@@ -1,4 +1,4 @@
-import { OpenAPISpec, TagNode } from "@/types/openapi";
+import { OpenAPISpec, TagNode, Operation, PathItem } from "@/types/openapi";
 import type { SpecWithSource } from "@/stores/spec";
 
 export function parseOpenAPISpec(spec: OpenAPISpec): TagNode {
@@ -245,4 +245,52 @@ export function parseMultipleSpecs(specs: SpecWithSource[]): TagNode {
   });
 
   return root;
+}
+
+/**
+ * Check if an operation requires authentication (is private)
+ * Security can be defined at three levels (in order of precedence):
+ * 1. Operation level (operation.security)
+ * 2. Path level (pathItem.security)
+ * 3. Spec level (spec.security)
+ * 
+ * An empty array [] at any level means the endpoint is public (overrides parent security)
+ */
+export function isOperationPrivate(
+  operation: Operation,
+  pathItem: PathItem | undefined,
+  spec: OpenAPISpec
+): boolean {
+  // Check operation level security first
+  if (operation.security !== undefined) {
+    // Empty array means public (overrides parent)
+    if (operation.security.length === 0) {
+      return false
+    }
+    // Non-empty array means private
+    return true
+  }
+
+  // Check path level security
+  if (pathItem?.security !== undefined) {
+    // Empty array means public (overrides parent)
+    if (pathItem.security.length === 0) {
+      return false
+    }
+    // Non-empty array means private
+    return true
+  }
+
+  // Check spec level security
+  if (spec.security !== undefined) {
+    // Empty array means public
+    if (spec.security.length === 0) {
+      return false
+    }
+    // Non-empty array means private
+    return true
+  }
+
+  // No security defined at any level means public
+  return false
 }

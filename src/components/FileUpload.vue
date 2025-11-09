@@ -1,45 +1,52 @@
 <template>
   <div class="flex min-h-screen bg-background">
     <!-- Left Sidebar - Menu -->
-    <div class="w-1/2 border-r border-border overflow-y-auto p-6">
-      <div class="text-center space-y-2 mb-6">
-        <div class="flex items-center justify-center gap-3">
-          <img src="/logo.png" alt="Logo" class="h-12 logo-image" />
+    <div class="w-1/2 border-r border-border overflow-y-auto p-6 flex flex-col">
+      <div class="flex items-center justify-between mb-8">
+        <div class="flex items-center gap-3">
+          <img src="/logo.png" alt="Logo" class="h-12 w-12 logo-image" />
           <h1 class="text-3xl font-bold tracking-tight">Specula</h1>
         </div>
-        <p class="text-sm text-muted-foreground">
-          Load your OpenAPI 3.0+ specification to explore
-        </p>
+        <ThemeToggle />
       </div>
 
-      <div class="space-y-2">
+      <div class="space-y-6">
         <!-- File Upload Section -->
-        <div class="border-b border-border">
+        <div>
           <button
             @click="toggleSection('upload')"
-            class="w-full flex items-center justify-between py-3 text-sm font-medium hover:text-foreground transition-colors text-muted-foreground"
+            class="w-full flex items-center justify-between py-3 text-sm font-medium hover:text-foreground transition-colors text-muted-foreground group"
           >
-            <span>Upload Files</span>
+            <div class="flex items-center gap-2">
+              <FileJson class="h-4 w-4 text-primary group-hover:scale-110 transition-transform" />
+              <span>Upload Files</span>
+            </div>
             <ChevronDown
               :class="['h-4 w-4 transition-transform', sectionsOpen.upload ? 'rotate-180' : '']"
             />
           </button>
-          <div v-show="sectionsOpen.upload" class="pb-3">
+          <div v-show="sectionsOpen.upload" class="pt-2">
             <div
               @drop="handleDrop"
               @dragover.prevent="isDragging = true"
               @dragleave="isDragging = false"
               :class="[
-                'border border-dashed rounded p-6 transition-colors cursor-pointer',
+                'border-2 border-dashed rounded-lg p-8 transition-all cursor-pointer relative overflow-hidden',
                 isDragging
-                  ? 'border-primary bg-primary/5'
-                  : 'border-border hover:border-primary/50'
+                  ? 'border-primary bg-primary/10 scale-[1.02]'
+                  : 'border-border hover:border-primary/50 hover:bg-muted/30'
               ]"
             >
-              <div class="flex flex-col items-center gap-2">
-                <Upload class="h-6 w-6 text-muted-foreground" />
-                <p class="text-xs text-muted-foreground text-center">Drop files or click to browse</p>
-                <Button @click="fileInputRef?.click()" size="sm" variant="outline" class="mt-1">
+              <div class="flex flex-col items-center gap-3">
+                <div class="relative">
+                  <div class="absolute inset-0 bg-primary/20 blur-xl rounded-full"></div>
+                  <Upload class="h-10 w-10 text-primary relative z-10" :class="{'animate-bounce': isDragging}" />
+                </div>
+                <div class="text-center space-y-1">
+                  <p class="text-sm font-medium text-foreground">Drop files or click to browse</p>
+                  <p class="text-xs text-muted-foreground">Supports JSON OpenAPI specifications</p>
+                </div>
+                <Button @click="fileInputRef?.click()" size="sm" class="mt-2">
                   Choose Files
                 </Button>
                 <input
@@ -56,41 +63,47 @@
         </div>
 
         <!-- Clipboard Section -->
-        <div class="border-b border-border">
+        <div>
           <button
             @click="toggleSection('clipboard')"
-            class="w-full flex items-center justify-between py-3 text-sm font-medium hover:text-foreground transition-colors text-muted-foreground"
+            class="w-full flex items-center justify-between py-3 text-sm font-medium hover:text-foreground transition-colors text-muted-foreground group"
           >
-            <span>From Clipboard</span>
+            <div class="flex items-center gap-2">
+              <Clipboard class="h-4 w-4 text-primary group-hover:scale-110 transition-transform" />
+              <span>From Clipboard</span>
+            </div>
             <ChevronDown
               :class="['h-4 w-4 transition-transform', sectionsOpen.clipboard ? 'rotate-180' : '']"
             />
           </button>
-          <div v-show="sectionsOpen.clipboard" class="pb-3 space-y-2">
+          <div v-show="sectionsOpen.clipboard" class="pt-2 space-y-2">
             <Textarea
               v-model="clipboardText"
               placeholder="Paste OpenAPI JSON specification here..."
               class="font-mono text-xs min-h-32"
               @paste="handleClipboardPaste"
             />
-            <Button @click="handleLoadFromClipboard" size="sm" variant="outline" class="w-full">
+            <Button @click="handleLoadFromClipboard" size="sm" class="w-full">
               Load from Clipboard
             </Button>
           </div>
         </div>
 
         <!-- URL Section -->
-        <div class="border-b border-border">
+        <div>
           <button
             @click="toggleSection('url')"
-            class="w-full flex items-center justify-between py-3 text-sm font-medium hover:text-foreground transition-colors text-muted-foreground"
+            class="w-full flex items-center justify-between py-3 text-sm font-medium hover:text-foreground transition-colors text-muted-foreground group"
           >
-            <span>Load from URL</span>
+            <div class="flex items-center gap-2">
+              <Link class="h-4 w-4 text-primary group-hover:scale-110 transition-transform" />
+              <span>Load from URL</span>
+            </div>
             <ChevronDown
               :class="['h-4 w-4 transition-transform', sectionsOpen.url ? 'rotate-180' : '']"
             />
           </button>
-          <div v-show="sectionsOpen.url" class="pb-3 space-y-2">
+          <div v-show="sectionsOpen.url" class="pt-2 space-y-2">
             <div class="flex gap-2">
               <Input
                 v-model="urlText"
@@ -99,15 +112,19 @@
                 class="font-mono text-xs flex-1"
                 @keyup.enter="handleAddUrl"
               />
-              <Button @click="handleAddUrl" :disabled="isLoadingUrl" size="sm" variant="outline">
+              <Button 
+                @click="handleAddUrl" 
+                :disabled="isLoadingUrl" 
+                class="h-10 bg-muted border border-border hover:bg-muted/80 text-foreground px-4"
+              >
                 Add
               </Button>
             </div>
-            <div v-if="urlList.length > 0" class="space-y-1 max-h-48 overflow-y-auto">
+            <div v-if="urlList.length > 0" class="space-y-2 max-h-48 overflow-y-auto">
               <div
-                v-for="(url, index) in urlList"
+                v-for="(urlItem, index) in urlList"
                 :key="index"
-                class="flex items-center gap-2 p-1.5 border border-border rounded text-xs"
+                class="flex items-center gap-2 p-3 rounded-lg hover:bg-muted/50 transition-all group"
               >
                 <input
                   type="checkbox"
@@ -116,55 +133,12 @@
                   :value="index"
                   class="rounded"
                 />
-                <label :for="`url-${index}`" class="flex-1 font-mono truncate cursor-pointer">
-                  {{ url }}
-                </label>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  class="h-4 w-4"
-                  @click="removeUrl(index)"
-                >
-                  <X class="h-3 w-3" />
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Favorites Section -->
-        <div v-if="favoriteSpecs.length > 0" class="border-b border-border">
-          <button
-            @click="toggleSection('favorites')"
-            class="w-full flex items-center justify-between py-3 text-sm font-medium hover:text-foreground transition-colors text-muted-foreground"
-          >
-            <span>Favorites ({{ favoriteSpecs.length }})</span>
-            <ChevronDown
-              :class="['h-4 w-4 transition-transform', sectionsOpen.favorites ? 'rotate-180' : '']"
-            />
-          </button>
-          <div v-show="sectionsOpen.favorites" class="pb-3">
-            <div class="space-y-1 max-h-64 overflow-y-auto">
-              <div
-                v-for="favorite in favoriteSpecs"
-                :key="favorite.hash"
-                class="flex items-center gap-2 p-1.5 border border-border rounded group"
-              >
-                <input
-                  type="checkbox"
-                  :id="`favorite-${favorite.hash}`"
-                  v-model="selectedFavorites"
-                  :value="favorite.hash"
-                  class="rounded"
-                />
-                <label
-                  :for="`favorite-${favorite.hash}`"
-                  class="flex-1 min-w-0 cursor-pointer text-xs"
-                  @click.stop
-                >
-                  <div class="font-medium text-foreground truncate">{{ favorite.title }}</div>
-                  <div class="text-muted-foreground truncate text-xs">
-                    {{ favorite.hash }}
+                <label :for="`url-${index}`" class="flex-1 min-w-0 cursor-pointer text-xs">
+                  <div class="font-medium text-foreground truncate">
+                    {{ urlItem.title || 'Loading...' }}
+                  </div>
+                  <div class="text-muted-foreground truncate text-xs font-mono">
+                    {{ urlItem.url }}
                   </div>
                 </label>
                 <div class="flex items-center gap-1">
@@ -172,7 +146,7 @@
                     variant="ghost"
                     size="icon"
                     class="h-5 w-5 text-muted-foreground hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity"
-                    @click.stop="downloadSpec(favorite.spec)"
+                    @click.stop="downloadSpecByUrl(urlItem.url)"
                     title="Download"
                   >
                     <Download class="h-3 w-3" />
@@ -180,11 +154,10 @@
                   <Button
                     variant="ghost"
                     size="icon"
-                    class="h-5 w-5 text-yellow-500 hover:text-yellow-600 opacity-0 group-hover:opacity-100 transition-opacity"
-                    @click.stop="removeFromFavorites(favorite.hash)"
-                    title="Remove from favorites"
+                    class="h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity"
+                    @click.stop="removeUrl(index)"
                   >
-                    <Star class="h-3 w-3 fill-current" />
+                    <X class="h-3 w-3" />
                   </Button>
                 </div>
               </div>
@@ -193,23 +166,26 @@
         </div>
 
         <!-- History Section -->
-        <div v-if="specHistoryStore.history.length > 0" class="border-b border-border">
+        <div v-if="specHistoryStore.history.length > 0">
           <button
             @click="toggleSection('history')"
-            class="w-full flex items-center justify-between py-3 text-sm font-medium hover:text-foreground transition-colors text-muted-foreground"
+            class="w-full flex items-center justify-between py-3 text-sm font-medium hover:text-foreground transition-colors text-muted-foreground group"
           >
-            <span>History ({{ specHistoryStore.history.length }})</span>
+            <div class="flex items-center gap-2">
+              <Clock class="h-4 w-4 text-primary group-hover:scale-110 transition-transform" />
+              <span>History ({{ specHistoryStore.history.length }})</span>
+            </div>
             <ChevronDown
               :class="['h-4 w-4 transition-transform', sectionsOpen.history ? 'rotate-180' : '']"
             />
           </button>
-          <div v-show="sectionsOpen.history" class="pb-3">
-            <div class="space-y-1 max-h-64 overflow-y-auto">
+          <div v-show="sectionsOpen.history" class="pt-2">
+            <div class="space-y-2 max-h-64 overflow-y-auto">
               <!-- History items - only viewed specs -->
               <div
                 v-for="item in specHistoryStore.history"
                 :key="`history-${item.id}`"
-                class="flex items-center gap-2 p-1.5 border border-border rounded group"
+                class="flex items-center gap-2 p-3 rounded-lg hover:bg-muted/50 transition-all group"
               >
                 <input
                   type="checkbox"
@@ -261,16 +237,103 @@
           </div>
         </div>
       </div>
+
+      <!-- Favorites Section - Separated at bottom -->
+      <div v-if="favoriteSpecs.length > 0" class="mt-auto pt-6 border-t border-border flex flex-col-reverse">
+        <button
+          @click="toggleSection('favorites')"
+          class="w-full flex items-center justify-between py-3 px-3 rounded-lg bg-muted/30 hover:bg-muted/50 text-sm font-medium hover:text-foreground transition-all text-muted-foreground group"
+        >
+          <div class="flex items-center gap-2">
+            <Star class="h-4 w-4 text-yellow-500 fill-yellow-500 group-hover:scale-110 transition-transform" />
+            <span>Favorites ({{ favoriteSpecs.length }})</span>
+          </div>
+          <ChevronDown
+            :class="['h-4 w-4 transition-transform', sectionsOpen.favorites ? 'rotate-180' : '']"
+          />
+        </button>
+        <div v-show="sectionsOpen.favorites" class="pb-2 max-h-[40vh] overflow-y-auto">
+          <div class="space-y-2">
+            <div
+              v-for="favorite in favoriteSpecs"
+              :key="favorite.hash"
+              class="flex items-center gap-2 p-3 rounded-lg hover:bg-muted/50 transition-all group"
+            >
+              <input
+                type="checkbox"
+                :id="`favorite-${favorite.hash}`"
+                v-model="selectedFavorites"
+                :value="favorite.hash"
+                class="rounded"
+              />
+              <label
+                :for="`favorite-${favorite.hash}`"
+                class="flex-1 min-w-0 cursor-pointer text-xs"
+                @click.stop
+              >
+                <div class="font-medium text-foreground truncate">{{ favorite.title }}</div>
+                <div class="text-muted-foreground truncate text-xs">
+                  {{ favorite.hash }}
+                </div>
+              </label>
+              <div class="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  class="h-5 w-5 text-muted-foreground hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity"
+                  @click.stop="downloadSpec(favorite.spec)"
+                  title="Download"
+                >
+                  <Download class="h-3 w-3" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  class="h-5 w-5 text-yellow-500 hover:text-yellow-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                  @click.stop="removeFromFavorites(favorite.hash)"
+                  title="Remove from favorites"
+                >
+                  <Star class="h-3 w-3 fill-current" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Right Side - Selected Specs -->
-    <div class="w-1/2 overflow-y-auto p-6">
+    <div class="w-1/2 overflow-y-auto p-6 bg-muted/20">
       <div class="max-w-2xl mx-auto space-y-6">
-        <div class="text-center space-y-2">
-          <h2 class="text-2xl font-bold">Selected Specifications</h2>
-          <p class="text-sm text-muted-foreground">
-            {{ selectedCount }} specification(s) selected
-          </p>
+        <!-- Continue with Last Workspace -->
+        <div v-if="lastWorkspaceStore.hasLastWorkspace()">
+          <Button
+            @click="handleLoadLastWorkspace"
+            :disabled="isLoadingLastWorkspace"
+            class="w-full relative overflow-hidden group"
+            size="lg"
+          >
+            <span class="relative z-10 flex items-center justify-center gap-2">
+              <RotateCcw class="h-4 w-4" />
+              {{ isLoadingLastWorkspace ? 'Loading...' : `Continue Work (${lastWorkspaceStore.lastWorkspace.length} specifications)` }}
+            </span>
+            <div class="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/20 to-primary/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
+          </Button>
+        </div>
+
+        <div class="text-center space-y-3 pb-4 border-b border-border">
+          <div class="flex items-center justify-center gap-2">
+            <FolderOpen class="h-6 w-6 text-primary" />
+            <h2 class="text-3xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+              Selected Specifications
+            </h2>
+          </div>
+          <div class="flex items-center justify-center gap-2">
+            <div class="h-2 w-2 rounded-full bg-primary animate-pulse"></div>
+            <p class="text-sm text-muted-foreground font-medium">
+              {{ selectedCount }} specification(s) selected
+            </p>
+          </div>
         </div>
 
         <!-- Selected Items List -->
@@ -282,7 +345,7 @@
               <div
                 v-for="hash in selectedFavorites"
                 :key="hash"
-                class="flex items-center justify-between p-3 border border-border rounded-lg bg-muted/30"
+                class="flex items-center justify-between p-4 border border-border rounded-lg bg-gradient-to-br from-muted/50 to-muted/30 hover:from-muted/70 hover:to-muted/50 hover:border-primary/50 transition-all shadow-sm"
               >
                 <div class="flex-1 min-w-0">
                   <div class="text-sm font-medium text-foreground truncate">
@@ -320,7 +383,7 @@
               <div
                 v-for="hash in selectedCache"
                 :key="hash"
-                class="flex items-center justify-between p-3 border border-border rounded-lg bg-muted/30"
+                class="flex items-center justify-between p-4 border border-border rounded-lg bg-gradient-to-br from-muted/50 to-muted/30 hover:from-muted/70 hover:to-muted/50 hover:border-primary/50 transition-all shadow-sm"
               >
                 <div class="flex-1 min-w-0">
                   <div class="text-sm font-medium text-foreground truncate">
@@ -358,7 +421,7 @@
               <div
                 v-for="id in selectedHistory"
                 :key="id"
-                class="flex items-center justify-between p-3 border border-border rounded-lg bg-muted/30"
+                class="flex items-center justify-between p-4 border border-border rounded-lg bg-gradient-to-br from-muted/50 to-muted/30 hover:from-muted/70 hover:to-muted/50 hover:border-primary/50 transition-all shadow-sm"
               >
                 <div class="flex-1 min-w-0">
                   <div class="text-sm font-medium text-foreground truncate">
@@ -396,11 +459,14 @@
               <div
                 v-for="index in selectedUrls"
                 :key="index"
-                class="flex items-center justify-between p-3 border border-border rounded-lg bg-muted/30"
+                class="flex items-center justify-between p-4 border border-border rounded-lg bg-gradient-to-br from-muted/50 to-muted/30 hover:from-muted/70 hover:to-muted/50 hover:border-primary/50 transition-all shadow-sm"
               >
                 <div class="flex-1 min-w-0">
-                  <div class="text-sm font-mono text-foreground truncate">
-                    {{ urlList[index] }}
+                  <div class="text-sm font-medium text-foreground truncate">
+                    {{ urlList[index].title || urlList[index].url }}
+                  </div>
+                  <div class="text-xs text-muted-foreground truncate font-mono">
+                    {{ urlList[index].url }}
                   </div>
                   <div class="text-xs text-muted-foreground">URL</div>
                 </div>
@@ -409,7 +475,7 @@
                     variant="ghost"
                     size="icon"
                     class="h-8 w-8 text-muted-foreground hover:text-primary"
-                    @click.stop="downloadSpecByUrl(urlList[index])"
+                    @click.stop="downloadSpecByUrl(urlList[index].url)"
                     title="Download"
                   >
                     <Download class="h-4 w-4" />
@@ -434,7 +500,7 @@
               <div
                 v-for="(file, index) in loadedFiles"
                 :key="index"
-                class="flex items-center justify-between p-3 border border-border rounded-lg bg-muted/30"
+                class="flex items-center justify-between p-4 border border-border rounded-lg bg-gradient-to-br from-muted/50 to-muted/30 hover:from-muted/70 hover:to-muted/50 hover:border-primary/50 transition-all shadow-sm"
               >
                 <div class="flex-1 min-w-0">
                   <div class="text-sm font-medium text-foreground truncate">
@@ -469,22 +535,34 @@
         </div>
 
         <!-- Empty State -->
-        <div v-else class="text-center py-12">
-          <p class="text-muted-foreground">No specifications selected</p>
-          <p class="text-sm text-muted-foreground mt-2">
-            Select specifications from the left menu to load them
-          </p>
+        <div v-else class="text-center py-16">
+          <div class="flex flex-col items-center gap-4">
+            <div class="relative">
+              <div class="absolute inset-0 bg-primary/20 blur-2xl rounded-full"></div>
+              <FileJson class="h-16 w-16 text-muted-foreground/30 relative z-10" />
+            </div>
+            <div class="space-y-2">
+              <p class="text-lg font-medium text-foreground">No specifications selected</p>
+              <p class="text-sm text-muted-foreground max-w-sm">
+                Select specifications from the left menu to load and explore them
+              </p>
+            </div>
+          </div>
         </div>
 
         <!-- Load Button -->
-        <div v-if="hasSelectedSpecs" class="pt-4 border-t border-border">
+        <div v-if="hasSelectedSpecs" class="pt-6 border-t border-border">
           <Button
             @click="handleLoadAllSelected"
             :disabled="isLoadingAll"
-            class="w-full"
+            class="w-full relative overflow-hidden group"
             size="lg"
           >
-            {{ isLoadingAll ? 'Loading...' : `Load All Selected (${selectedCount})` }}
+            <span class="relative z-10 flex items-center justify-center gap-2">
+              <Sparkles class="h-4 w-4" />
+              {{ isLoadingAll ? 'Loading...' : `Load All Selected (${selectedCount})` }}
+            </span>
+            <div class="absolute inset-0 bg-gradient-to-r from-primary/0 via-primary/20 to-primary/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
           </Button>
         </div>
       </div>
@@ -495,14 +573,16 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { Upload, X, Star, ChevronDown, Download } from 'lucide-vue-next'
+import { Upload, X, Star, ChevronDown, Download, FileJson, Clipboard, Link, Clock, FolderOpen, Sparkles, RotateCcw } from 'lucide-vue-next'
 import Button from './ui/Button.vue'
 import Input from './ui/Input.vue'
 import Textarea from './ui/Textarea.vue'
+import ThemeToggle from './ThemeToggle.vue'
 import { useToast } from '@/composables/useToast'
 import { useSpecHistoryStore } from '@/stores/specHistory'
-import { useSpecCacheStore } from '@/stores/specCache'
+import { useSpecCacheStore, isHash } from '@/stores/specCache'
 import { useSpecFavoritesStore } from '@/stores/specFavorites'
+import { useLastWorkspaceStore } from '@/stores/lastWorkspace'
 import type { OpenAPISpec } from '@/types/openapi'
 
 interface Props {
@@ -516,20 +596,22 @@ const { toast } = useToast()
 const specHistoryStore = useSpecHistoryStore()
 const specCacheStore = useSpecCacheStore()
 const specFavoritesStore = useSpecFavoritesStore()
+const lastWorkspaceStore = useLastWorkspaceStore()
 const isDragging = ref(false)
 const showUrlInput = ref(true)
 const urlText = ref('')
 const isLoadingUrl = ref(false)
 const isLoadingAll = ref(false)
+const isLoadingLastWorkspace = ref(false)
 const fileInputRef = ref<HTMLInputElement | null>(null)
 
 // Sections collapse state
 const sectionsOpen = ref({
-  upload: true,
+  upload: false,
   clipboard: false,
-  url: true,
+  url: false,
   favorites: true,
-  history: true,
+  history: false,
 })
 
 const clipboardText = ref('')
@@ -543,7 +625,7 @@ const selectedHistory = ref<string[]>([])
 const selectedCache = ref<string[]>([])
 const selectedFavorites = ref<string[]>([])
 const selectedUrls = ref<number[]>([])
-const urlList = ref<string[]>([])
+const urlList = ref<Array<{ url: string; title?: string }>>([])
 const loadedFiles = ref<Array<{ spec: OpenAPISpec; hash?: string; sourceUrl?: string }>>([])
 
 // Computed: separate favorites from regular cache
@@ -695,7 +777,7 @@ const validateAndLoad = (spec: any, isFromFile: boolean = false, sourceUrl?: str
   return { spec: openApiSpec, hash, sourceUrl }
 }
 
-const handleAddUrl = () => {
+const handleAddUrl = async () => {
   const url = urlText.value.trim()
   if (!url) {
     toast({
@@ -718,7 +800,8 @@ const handleAddUrl = () => {
     return
   }
 
-  if (urlList.value.includes(url)) {
+  // Check for duplicates
+  if (urlList.value.some(item => item.url === url)) {
     toast({
       title: 'Duplicate URL',
       description: 'This URL is already in the list',
@@ -727,12 +810,56 @@ const handleAddUrl = () => {
     return
   }
 
-  urlList.value.push(url)
-  urlText.value = ''
-  toast({
-    title: 'Added',
-    description: 'URL added to list',
-  })
+  isLoadingUrl.value = true
+  
+  try {
+    // Add URL with empty title first (will be updated after loading)
+    const urlItem = { url, title: undefined as string | undefined }
+    urlList.value.push(urlItem)
+    
+    // Fetch and validate the specification
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+      },
+    })
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    
+    const spec = await response.json()
+    
+    // Validate OpenAPI spec
+    if (!spec.openapi || !spec.paths) {
+      throw new Error('Invalid OpenAPI specification')
+    }
+    
+    // Extract title from spec
+    const title = spec.info?.title || 'Untitled Specification'
+    
+    // Update the URL item with the title
+    const index = urlList.value.length - 1
+    urlList.value[index] = { url, title }
+    
+    urlText.value = ''
+    toast({
+      title: 'Added',
+      description: `${title} added to list`,
+    })
+  } catch (error: any) {
+    // Remove the URL item if loading failed
+    urlList.value.pop()
+    
+    toast({
+      title: 'Failed to load',
+      description: `Could not load specification from URL: ${error.message || 'Unknown error'}`,
+      variant: 'destructive',
+    })
+  } finally {
+    isLoadingUrl.value = false
+  }
 }
 
 const removeUrl = (index: number) => {
@@ -765,11 +892,22 @@ const removeFromFavorites = (hash: string) => {
   const cached = specCacheStore.getCachedSpec(hash)
   if (cached) {
     specFavoritesStore.removeFromFavorites(hash)
+    
     // Remove from selected if it was selected
     const selectedIndex = selectedFavorites.value.indexOf(hash)
     if (selectedIndex !== -1) {
       selectedFavorites.value.splice(selectedIndex, 1)
     }
+    
+    // Add back to history if it's not already there
+    const isInHistory = specHistoryStore.history.some(item => {
+      return JSON.stringify(item.spec) === JSON.stringify(cached.spec)
+    })
+    
+    if (!isInHistory) {
+      specHistoryStore.addToHistory(cached.spec)
+    }
+    
     toast({
       title: 'Removed from favorites',
       description: `${cached.title} has been removed from favorites`,
@@ -882,6 +1020,16 @@ const addHistoryToFavorites = (id: string) => {
     
     // Add to favorites
     specFavoritesStore.addToFavorites(spec, hash)
+    
+    // Remove from history after adding to favorites
+    specHistoryStore.removeFromHistory(id)
+    
+    // Remove from selected history if it was selected
+    const selectedIndex = selectedHistory.value.indexOf(id)
+    if (selectedIndex !== -1) {
+      selectedHistory.value.splice(selectedIndex, 1)
+    }
+    
     toast({
       title: 'Added to favorites',
       description: `${spec.info?.title || 'Specification'} has been added to favorites`,
@@ -978,6 +1126,104 @@ const handleFileChange = (e: Event) => {
   }
 }
 
+const handleLoadLastWorkspace = async () => {
+  if (!lastWorkspaceStore.hasLastWorkspace()) {
+    toast({
+      title: 'No saved workspace',
+      description: 'No saved workspace found to load',
+      variant: 'destructive',
+    })
+    return
+  }
+
+  isLoadingLastWorkspace.value = true
+  const allSpecs: Array<{ spec: OpenAPISpec; hash?: string; sourceUrl?: string }> = []
+
+  try {
+    for (const item of lastWorkspaceStore.lastWorkspace) {
+      try {
+        let spec: OpenAPISpec
+        let sourceUrl: string | undefined
+        let hash: string | undefined
+
+        // Check if identifier is a hash or URL
+        if (isHash(item.identifier)) {
+          // Load from cache
+          const cachedSpec = specCacheStore.getByHash(item.identifier)
+          if (!cachedSpec) {
+            toast({
+              title: 'Specification not found',
+              description: `Specification "${item.title}" not found in cache`,
+              variant: 'destructive',
+            })
+            continue
+          }
+          spec = cachedSpec
+          hash = item.identifier
+        } else {
+          // Load from URL
+          const response = await fetch(item.identifier, {
+            method: 'GET',
+            headers: {
+              'Accept': 'application/json',
+            },
+          })
+          
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`)
+          }
+          
+          spec = await response.json()
+          sourceUrl = item.identifier
+        }
+
+        // Validate OpenAPI spec
+        if (!spec.openapi || !spec.paths) {
+          toast({
+            title: 'Invalid specification',
+            description: `Specification "${item.title}" is not a valid OpenAPI specification`,
+            variant: 'destructive',
+          })
+          continue
+        }
+
+        allSpecs.push({ spec, hash, sourceUrl })
+      } catch (error: any) {
+        toast({
+          title: 'Load error',
+          description: `Failed to load "${item.title}": ${error.message || 'Unknown error'}`,
+          variant: 'destructive',
+        })
+      }
+    }
+
+    if (allSpecs.length === 0) {
+      toast({
+        title: 'No valid specifications',
+        description: 'Failed to load any specifications from the saved workspace',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    // Emit all specs at once
+    emit('specsLoad', allSpecs)
+
+    toast({
+      title: 'Loaded',
+      description: `Loaded ${allSpecs.length} specifications from last workspace`,
+    })
+  } catch (error: any) {
+    toast({
+      title: 'Error',
+      description: error.message || 'Failed to load last workspace',
+      variant: 'destructive',
+    })
+  } finally {
+    isLoadingLastWorkspace.value = false
+  }
+}
+
 const handleLoadAllSelected = async () => {
   if (!hasSelectedSpecs.value) {
     toast({
@@ -1032,8 +1278,9 @@ const handleLoadAllSelected = async () => {
 
     // Load from URLs
     for (const index of selectedUrls.value) {
-      const url = urlList.value[index]
-      if (url) {
+      const urlItem = urlList.value[index]
+      if (urlItem) {
+        const url = urlItem.url
         try {
           const response = await fetch(url, {
             method: 'GET',

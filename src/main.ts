@@ -8,6 +8,7 @@ import App from './App.vue'
 import Index from './pages/Index.vue'
 import Selection from './pages/Selection.vue'
 import NotFound from './pages/NotFound.vue'
+import { useThemeStore } from './stores/theme'
 
 const pinia = createPinia()
 
@@ -27,6 +28,11 @@ const router = createRouter({
 const app = createApp(App)
 app.use(pinia)
 app.use(router)
+
+// Initialize theme before mounting to avoid flash
+const themeStore = useThemeStore()
+themeStore.initTheme()
+
 app.use(Toast, {
   position: 'top-right',
   timeout: 5000,

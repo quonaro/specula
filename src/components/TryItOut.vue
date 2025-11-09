@@ -190,7 +190,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { Play, Copy, Check, Lock, Unlock } from 'lucide-vue-next'
 import Card from './ui/Card.vue'
 import Button from './ui/Button.vue'
@@ -353,9 +353,166 @@ const parameters = computed(() => props.operation.parameters || [])
 const hasParameters = computed(() => parameters.value.length > 0)
 const hasRequestBody = computed(() => props.operation.requestBody !== undefined)
 
+// Resolve requestBody to handle $ref
+const resolvedBody = computed(() => {
+  if (!props.operation.requestBody) return null
+  return resolver.resolve(props.operation.requestBody)
+})
+
+// Extract example from requestBody
+const getRequestBodyExample = (): string => {
+  if (!resolvedBody.value || !resolvedBody.value.content) {
+    return '{}'
+  }
+
+  // Try to find examples in content types (prioritize application/json)
+  const contentTypes = Object.keys(resolvedBody.value.content)
+  const jsonContentType = contentTypes.find(ct => ct.includes('json')) || contentTypes[0]
+  
+  if (!jsonContentType) {
+    return '{}'
+  }
+
+  const mediaType = resolvedBody.value.content[jsonContentType]
+  if (!mediaType) {
+    return '{}'
+  }
+
+  // First, try to get from examples (multiple examples)
+  if (mediaType.examples && Object.keys(mediaType.examples).length > 0) {
+    const firstExampleKey = Object.keys(mediaType.examples)[0]
+    const firstExample = resolver.resolve(mediaType.examples[firstExampleKey])
+    if (firstExample?.value !== undefined) {
+      return JSON.stringify(firstExample.value, null, 2)
+    }
+  }
+
+  // Second, try to get from single example
+  if (mediaType.example !== undefined) {
+    return JSON.stringify(mediaType.example, null, 2)
+  }
+
+  // If no examples, try to generate from schema
+  if (mediaType.schema) {
+    const schema = resolver.resolve(mediaType.schema)
+    const generatedExample = generateExampleFromSchema(schema)
+    if (generatedExample) {
+      return JSON.stringify(generatedExample, null, 2)
+    }
+  }
+
+  return '{}'
+}
+
+// Generate example from schema
+const generateExampleFromSchema = (schema: any): any => {
+  if (!schema) return null
+
+  const resolvedSchema = resolver.resolve(schema)
+
+  // Handle resolution errors (circular refs, external refs, not found)
+  if (resolvedSchema.__circular || resolvedSchema.__external || resolvedSchema.__notFound) {
+    return null
+  }
+
+  // Handle allOf, oneOf, anyOf
+  if (resolvedSchema.allOf && resolvedSchema.allOf.length > 0) {
+    const merged: any = {}
+    resolvedSchema.allOf.forEach((s: any) => {
+      const example = generateExampleFromSchema(s)
+      if (example && typeof example === 'object') {
+        Object.assign(merged, example)
+      }
+    })
+    return Object.keys(merged).length > 0 ? merged : null
+  }
+
+  if (resolvedSchema.oneOf && resolvedSchema.oneOf.length > 0) {
+    return generateExampleFromSchema(resolvedSchema.oneOf[0])
+  }
+
+  if (resolvedSchema.anyOf && resolvedSchema.anyOf.length > 0) {
+    return generateExampleFromSchema(resolvedSchema.anyOf[0])
+  }
+
+  // Handle different types
+  const type = resolvedSchema.type
+
+  if (type === 'object') {
+    const example: any = {}
+    if (resolvedSchema.properties) {
+      Object.keys(resolvedSchema.properties).forEach(key => {
+        const propSchema = resolver.resolve(resolvedSchema.properties[key])
+        const propExample = generateExampleFromSchema(propSchema)
+        if (propExample !== null && propExample !== undefined) {
+          example[key] = propExample
+        }
+      })
+    }
+    return Object.keys(example).length > 0 ? example : null
+  }
+
+  if (type === 'array') {
+    if (resolvedSchema.items) {
+      const itemExample = generateExampleFromSchema(resolvedSchema.items)
+      return itemExample !== null ? [itemExample] : null
+    }
+    return []
+  }
+
+  // Handle primitive types with defaults or examples
+  if (resolvedSchema.default !== undefined) {
+    return resolvedSchema.default
+  }
+
+  if (resolvedSchema.example !== undefined) {
+    return resolvedSchema.example
+  }
+
+  // Generate based on type
+  switch (type) {
+    case 'string':
+      if (resolvedSchema.enum && resolvedSchema.enum.length > 0) {
+        return resolvedSchema.enum[0]
+      }
+      if (resolvedSchema.format === 'email') return 'user@example.com'
+      if (resolvedSchema.format === 'date') return '2024-01-01'
+      if (resolvedSchema.format === 'date-time') return '2024-01-01T00:00:00Z'
+      if (resolvedSchema.format === 'uri') return 'https://example.com'
+      return 'string'
+    case 'number':
+    case 'integer':
+      return 0
+    case 'boolean':
+      return false
+    case 'null':
+      return null
+    default:
+      return null
+  }
+}
+
 const updateParamValue = (name: string, value: string) => {
   paramValues.value = { ...paramValues.value, [name]: value }
 }
+
+// Initialize requestBody with example when component mounts or operation changes
+const initializeRequestBody = () => {
+  if (hasRequestBody.value) {
+    const example = getRequestBodyExample()
+    requestBody.value = example
+  }
+}
+
+// Watch for operation changes and reinitialize
+watch(() => [props.operation, props.path, props.method], () => {
+  initializeRequestBody()
+}, { immediate: false, deep: false })
+
+// Initialize on mount
+onMounted(() => {
+  initializeRequestBody()
+})
 
 const handleExecute = async () => {
   isExecuting.value = true

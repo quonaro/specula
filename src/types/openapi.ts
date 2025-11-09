@@ -58,6 +58,7 @@ export interface PathItem {
   options?: Operation;
   head?: Operation;
   trace?: Operation;
+  security?: Array<Record<string, string[]>>;
 }
 
 export interface Operation {

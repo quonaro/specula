@@ -131,6 +131,7 @@ import { useToast } from '@/composables/useToast'
 import { useSpecStore } from '@/stores/spec'
 import { useSpecCacheStore, isHash } from '@/stores/specCache'
 import { useSpecHistoryStore } from '@/stores/specHistory'
+import { useLastWorkspaceStore } from '@/stores/lastWorkspace'
 import type { OpenAPISpec, TagNode, Operation } from '@/types/openapi'
 import { parseOpenAPISpec, parseMultipleSpecs, findNodeByPath, findNodeBySlug, toSlug, endpointPathToSlug, slugToEndpointPath } from '@/utils/openapi-parser'
 
@@ -140,6 +141,7 @@ const { toast } = useToast()
 const specStore = useSpecStore()
 const specCacheStore = useSpecCacheStore()
 const specHistoryStore = useSpecHistoryStore()
+const lastWorkspaceStore = useLastWorkspaceStore()
 const tagTree = ref<TagNode | null>(null)
 const selectedOperation = ref<{ method: string; path: string } | null>(null)
 const selectedGroup = ref<TagNode | null>(null)
@@ -584,6 +586,9 @@ watch(() => specStore.specs, (newSpecs) => {
       newSpecs.forEach(specWithSource => {
         specHistoryStore.addToHistory(specWithSource.spec)
       })
+      
+      // Save current workspace
+      lastWorkspaceStore.saveWorkspace(newSpecs)
     }
     
     // Update URL with spec parameters if not loading from URL

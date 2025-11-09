@@ -4,12 +4,15 @@
 
 <script setup lang="ts">
 import { onMounted } from 'vue'
-import { useThemeStore } from '@/stores/theme'
+import { useBackend } from '@/composables/useBackend'
 
-const themeStore = useThemeStore()
+const { checkBackend } = useBackend()
 
 onMounted(() => {
-  themeStore.initTheme()
+  // Check backend availability on app start
+  checkBackend().catch(() => {
+    // Silently fail - backend is optional
+  })
 })
 </script>
 
