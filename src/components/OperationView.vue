@@ -381,16 +381,31 @@
           <Separator />
 
           <!-- Params -->
-          <TryItOut 
-            :method="method" 
-            :path="path" 
-            :operation="operation" 
-            :spec="spec" 
-            :source-url="sourceUrl"
-            :server-url="getCurrentServerUrl()"
-            :authorization-credentials="getAuthorizationCredentials"
-            @response="handleResponse"
-          />
+          <template v-if="!isExampleMode">
+            <TryItOut 
+              :method="method" 
+              :path="path" 
+              :operation="operation" 
+              :spec="spec" 
+              :source-url="sourceUrl"
+              :server-url="getCurrentServerUrl()"
+              :authorization-credentials="getAuthorizationCredentials"
+              @response="handleResponse"
+            />
+          </template>
+          <template v-else>
+            <Card class="p-6 space-y-4">
+              <div class="flex items-center gap-2">
+                <Settings class="w-5 h-5 text-muted-foreground" />
+                <h3 class="text-lg font-semibold text-muted-foreground">Try It Out</h3>
+              </div>
+              <div class="p-4 bg-muted rounded-lg border border-border">
+                <p class="text-sm text-muted-foreground text-center">
+                  Try It Out functionality is disabled in Example mode
+                </p>
+              </div>
+            </Card>
+          </template>
           <Separator />
 
           <!-- Response -->
@@ -475,7 +490,7 @@
 
 <script setup lang="ts">
 import { computed, ref, watch, onMounted } from 'vue'
-import { Copy, Check, Key, Server, FileText } from 'lucide-vue-next'
+import { Copy, Check, Key, Server, FileText, Settings } from 'lucide-vue-next'
 import type { Operation, OpenAPISpec, PathItem } from '@/types/openapi'
 import { RefResolver } from '@/utils/ref-resolver'
 import { isOperationPrivate } from '@/utils/openapi-parser'
@@ -521,6 +536,11 @@ const pathItem = computed(() => {
 // Check if operation is private
 const isPrivate = computed(() => {
   return isOperationPrivate(props.operation, pathItem.value, props.spec)
+})
+
+// Check if Example mode is enabled
+const isExampleMode = computed(() => {
+  return import.meta.env.VITE_EXAMPLE === 'true'
 })
 
 // Server URL management
