@@ -2,17 +2,22 @@ import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 import path from "path";
 
-export default defineConfig({
-  server: {
-    host: "::",
-    port: 8080,
-  },
-  plugins: [vue()],
-  resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
+export default defineConfig(({ mode }) => {
+  // Get base path from environment variable, default to '/' for development
+  const base = process.env.VITE_BASE_PATH || '/';
+
+  return {
+    base,
+    server: {
+      host: "::",
+      port: 8080,
     },
-  },
+    plugins: [vue()],
+    resolve: {
+      alias: {
+        "@": path.resolve(__dirname, "./src"),
+      },
+    },
   build: {
     // Enable minification
     minify: 'esbuild',
@@ -38,8 +43,9 @@ export default defineConfig({
     // Tree-shaking optimization
     target: 'esnext',
   },
-  // Optimize dependencies
-  optimizeDeps: {
-    include: ['vue', 'vue-router', 'pinia', 'lucide-vue-next'],
-  },
+    // Optimize dependencies
+    optimizeDeps: {
+      include: ['vue', 'vue-router', 'pinia', 'lucide-vue-next'],
+    },
+  };
 });

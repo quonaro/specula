@@ -12,8 +12,11 @@ import { useThemeStore } from './stores/theme'
 
 const pinia = createPinia()
 
+// Get base path from environment variable, default to '/' for development
+const base = import.meta.env.BASE_URL || '/';
+
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(base),
   routes: [
     { path: '/selection', component: Selection },
     { path: '/', component: Index },
