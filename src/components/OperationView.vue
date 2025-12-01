@@ -216,15 +216,64 @@
                     :key="contentType"
                     class="space-y-2"
                   >
-                    <div class="text-sm font-medium text-foreground">
-                      Content-Type: <code>{{ contentType }}</code>
+                    <div class="flex items-center justify-between">
+                      <div class="text-sm font-medium text-foreground">
+                        Content-Type: <code>{{ contentType }}</code>
+                      </div>
+                      <div v-if="mediaType?.schema" class="flex items-center gap-2">
+                        <span class="text-xs text-muted-foreground">Format:</span>
+                        <div class="inline-flex gap-0.5 bg-muted rounded-md p-0.5 border border-border">
+                          <button
+                            :class="[
+                              'px-2.5 py-1 text-xs font-medium rounded transition-all',
+                              getResponseFormat(code, contentType) === 'beauty'
+                                ? 'bg-background text-foreground shadow-sm'
+                                : 'text-muted-foreground hover:text-foreground'
+                            ]"
+                            @click="setResponseFormat(code, contentType, 'beauty')"
+                          >
+                            Beauty
+                          </button>
+                          <button
+                            :class="[
+                              'px-2.5 py-1 text-xs font-medium rounded transition-all',
+                              getResponseFormat(code, contentType) === 'json'
+                                ? 'bg-background text-foreground shadow-sm'
+                                : 'text-muted-foreground hover:text-foreground'
+                            ]"
+                            @click="setResponseFormat(code, contentType, 'json')"
+                          >
+                            JSON
+                          </button>
+                        </div>
+                      </div>
                     </div>
                     <SchemaView
-                      v-if="mediaType?.schema"
+                      v-if="mediaType?.schema && getResponseFormat(code, contentType) === 'beauty'"
                       :schema="mediaType.schema"
                       title="Schema"
                       :resolver="resolver"
                     />
+                    <div
+                      v-if="mediaType?.schema && getResponseFormat(code, contentType) === 'json'"
+                      class="mt-2 space-y-2"
+                    >
+                      <div class="flex items-center justify-between">
+                        <h4 class="text-sm font-semibold">Schema</h4>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          class="h-7 px-2 text-xs"
+                          @click="handleCopySchemaJson(code, contentType, mediaType.schema)"
+                        >
+                          <Check v-if="getCopiedState(code, contentType)" class="w-3.5 h-3.5" />
+                          <Copy v-else class="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                      <div class="relative">
+                        <pre class="bg-code-bg border border-code-border rounded-lg p-4 overflow-x-auto text-xs font-mono leading-relaxed"><code>{{ getSchemaAsJson(mediaType.schema) }}</code></pre>
+                      </div>
+                    </div>
                     <div
                       v-if="mediaType?.examples && Object.keys(mediaType.examples).length > 0"
                       class="space-y-2"
@@ -311,8 +360,8 @@
           <!-- Server URL -->
           <Card class="p-6 space-y-4">
             <div class="flex items-center gap-2">
-              <Server class="w-5 h-5 text-primary" />
-              <h3 class="text-lg font-semibold text-foreground">Server URL</h3>
+              <Server :class="isExampleMode ? 'w-5 h-5 text-muted-foreground' : 'w-5 h-5 text-primary'" />
+              <h3 :class="isExampleMode ? 'text-lg font-semibold text-muted-foreground' : 'text-lg font-semibold text-foreground'">Server URL</h3>
             </div>
             <div class="space-y-2 border border-border rounded-md p-3 bg-muted/30">
               <div
@@ -326,11 +375,12 @@
                   :value="server.url"
                   :checked="selectedServer === server.url"
                   @change="handleServerSelect(server.url)"
-                  class="h-4 w-4 text-primary focus:ring-primary"
+                  :disabled="isExampleMode"
+                  class="h-4 w-4 text-primary focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
                 />
                 <label
                   :for="`server-${idx}`"
-                  class="flex-1 text-sm cursor-pointer"
+                  :class="isExampleMode ? 'flex-1 text-sm cursor-not-allowed text-muted-foreground' : 'flex-1 text-sm cursor-pointer'"
                 >
                   <div class="font-medium text-foreground">{{ server.url }}</div>
                   <div v-if="server.label.includes('(')" class="text-xs text-muted-foreground">
@@ -345,11 +395,12 @@
                   value="current-host"
                   :checked="selectedServer === 'current-host'"
                   @change="handleServerSelect('current-host')"
-                  class="h-4 w-4 text-primary focus:ring-primary"
+                  :disabled="isExampleMode"
+                  class="h-4 w-4 text-primary focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
                 />
                 <label
                   for="server-current-host"
-                  class="flex-1 text-sm cursor-pointer font-medium text-foreground"
+                  :class="isExampleMode ? 'flex-1 text-sm cursor-not-allowed font-medium text-muted-foreground' : 'flex-1 text-sm cursor-pointer font-medium text-foreground'"
                 >
                   Current Host ({{ getCurrentHostUrl() }})
                 </label>
@@ -361,11 +412,12 @@
                   value="custom"
                   :checked="selectedServer === 'custom'"
                   @change="handleServerSelect('custom')"
-                  class="h-4 w-4 text-primary focus:ring-primary"
+                  :disabled="isExampleMode"
+                  class="h-4 w-4 text-primary focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
                 />
                 <label
                   for="server-custom"
-                  class="flex-1 text-sm cursor-pointer font-medium text-foreground"
+                  :class="isExampleMode ? 'flex-1 text-sm cursor-not-allowed font-medium text-muted-foreground' : 'flex-1 text-sm cursor-pointer font-medium text-foreground'"
                 >
                   Custom URL...
                 </label>
@@ -374,7 +426,7 @@
             <Input
               :model-value="getCurrentServerUrl()"
               @update:model-value="handleServerUrlUpdate"
-              :disabled="selectedServer !== 'custom' && selectedServer !== 'current-host' && availableServers.length > 0"
+              :disabled="isExampleMode || (selectedServer !== 'custom' && selectedServer !== 'current-host' && availableServers.length > 0)"
               placeholder="https://api.example.com"
             />
           </Card>
@@ -548,6 +600,13 @@ const customServerUrl = ref('')
 const response = ref<any>(null)
 const copied = ref(false)
 const responseTab = ref('body')
+
+// Format selection for Responses schemas (JSON or Beauty)
+// Key format: `${code}-${contentType}`
+const responseSchemaFormats = ref<Map<string, 'json' | 'beauty'>>(new Map())
+
+// Track copied state for each schema JSON
+const schemaJsonCopied = ref<Map<string, boolean>>(new Map())
 
 // Authorization management
 const authorizationStore = useAuthorizationStore()
@@ -727,6 +786,45 @@ const handleCopy = (text: string) => {
   setTimeout(() => {
     copied.value = false
   }, 2000)
+}
+
+// Get response schema format (default to 'beauty')
+const getResponseFormat = (code: string, contentType: string): 'json' | 'beauty' => {
+  const key = `${code}-${contentType}`
+  return responseSchemaFormats.value.get(key) || 'beauty'
+}
+
+// Set response schema format
+const setResponseFormat = (code: string, contentType: string, format: 'json' | 'beauty') => {
+  const key = `${code}-${contentType}`
+  responseSchemaFormats.value.set(key, format)
+}
+
+// Convert schema to JSON string
+const getSchemaAsJson = (schema: any): string => {
+  try {
+    const resolvedSchema = resolver.resolve(schema)
+    return JSON.stringify(resolvedSchema, null, 2)
+  } catch (error) {
+    return JSON.stringify(schema, null, 2)
+  }
+}
+
+// Handle copy schema JSON
+const handleCopySchemaJson = (code: string, contentType: string, schema: any) => {
+  const jsonText = getSchemaAsJson(schema)
+  navigator.clipboard.writeText(jsonText)
+  const key = `${code}-${contentType}-json`
+  schemaJsonCopied.value.set(key, true)
+  setTimeout(() => {
+    schemaJsonCopied.value.set(key, false)
+  }, 2000)
+}
+
+// Get copied state for schema JSON
+const getCopiedState = (code: string, contentType: string): boolean => {
+  const key = `${code}-${contentType}-json`
+  return schemaJsonCopied.value.get(key) || false
 }
 </script>
 

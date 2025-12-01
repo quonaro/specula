@@ -5,10 +5,12 @@ import Toast from 'vue-toastification'
 import 'vue-toastification/dist/index.css'
 import './index.css'
 import App from './App.vue'
-import Index from './pages/Index.vue'
-import Selection from './pages/Selection.vue'
-import NotFound from './pages/NotFound.vue'
 import { useThemeStore } from './stores/theme'
+
+// Lazy load pages for better code splitting
+const Index = () => import('./pages/Index.vue')
+const Selection = () => import('./pages/Selection.vue')
+const NotFound = () => import('./pages/NotFound.vue')
 
 const pinia = createPinia()
 
@@ -17,9 +19,9 @@ const base = import.meta.env.BASE_URL || '/';
 
 // Handle GitHub Pages 404 redirect
 // https://github.com/rafgraph/spa-github-pages
-(function(l) {
-  if (l.search[1] === '/' ) {
-    var decoded = l.search.slice(1).split('&').map(function(s) { 
+(function (l) {
+  if (l.search[1] === '/') {
+    var decoded = l.search.slice(1).split('&').map(function (s) {
       return s.replace(/~and~/g, '&')
     }).join('?');
     // Use base path to correctly restore the route
@@ -49,6 +51,10 @@ app.use(router)
 // Initialize theme before mounting to avoid flash
 const themeStore = useThemeStore()
 themeStore.initTheme()
+
+// Initialize settings (accent color) before mounting
+import { useSettingsStore } from './stores/settings'
+const settingsStore = useSettingsStore()
 
 app.use(Toast, {
   position: 'top-right',

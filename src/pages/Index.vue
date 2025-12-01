@@ -8,7 +8,7 @@
     </div>
   </div>
   
-  <div v-else class="flex h-screen w-full bg-background">
+  <div v-else class="flex h-screen w-full bg-background" @click="handleClickOutsideSearch">
     <Sidebar
       :root="tagTree"
       :selected-operation="selectedOperation"
@@ -31,6 +31,57 @@
                   ? `v${specStore.specs[0].spec?.info?.version || '1.0.0'} | OpenAPI ${specStore.specs[0].spec?.openapi}`
                   : 'Multiple specifications loaded' }}
               </p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 flex-1 max-w-2xl mx-4">
+            <div class="relative flex-1 global-search-container">
+              <Search class="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                v-model="globalSearchQuery"
+                placeholder="Search all endpoints..."
+                class="pl-8 h-9 text-sm"
+                @focus="showGlobalSearchResults = true"
+                @keydown.escape="showGlobalSearchResults = false"
+              />
+              <div
+                v-if="showGlobalSearchResults && globalSearchResults.length > 0"
+                class="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-md shadow-lg z-50 max-h-96 overflow-y-auto"
+                @click.stop
+              >
+                <div
+                  v-for="(result, idx) in globalSearchResults"
+                  :key="idx"
+                  class="p-3 hover:bg-muted cursor-pointer border-b border-border last:border-b-0"
+                  @click="handleGlobalSearchSelect(result)"
+                >
+                  <div class="flex items-center gap-2 mb-1">
+                    <span
+                      :class="[
+                        'text-xs font-bold px-2 py-0.5 rounded text-white',
+                        getMethodColorClass(result.method)
+                      ]"
+                    >
+                      {{ result.method }}
+                    </span>
+                    <span class="text-sm font-medium text-foreground flex-1 truncate">
+                      {{ result.path }}
+                    </span>
+                    <span v-if="result.specTitle" class="text-xs text-muted-foreground truncate max-w-[120px]">
+                      {{ result.specTitle }}
+                    </span>
+                  </div>
+                  <p v-if="result.operation.summary" class="text-xs text-muted-foreground line-clamp-1">
+                    {{ result.operation.summary }}
+                  </p>
+                </div>
+              </div>
+              <div
+                v-if="showGlobalSearchResults && globalSearchQuery && globalSearchResults.length === 0"
+                class="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-md shadow-lg z-50 p-4 text-center text-sm text-muted-foreground"
+                @click.stop
+              >
+                No results found
+              </div>
             </div>
           </div>
           <div class="flex items-center gap-2">
@@ -65,7 +116,9 @@
               <Download class="h-4 w-4 mr-2" />
               Download
             </Button>
-            <ThemeToggle />
+            <Button variant="outline" size="sm" @click="showSettingsDialog = true">
+              <Settings class="h-4 w-4" />
+            </Button>
           </div>
         </div>
         
@@ -134,6 +187,11 @@
       :specs="specStore.specs"
     />
     
+    <!-- Settings Dialog -->
+    <SettingsDialog
+      v-model="showSettingsDialog"
+    />
+    
     <!-- Authorization Settings Dialog -->
     <AuthorizationSettingsDialog
       v-if="selectedSpecForAuth"
@@ -171,17 +229,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, defineAsyncComponent } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { Download, ArrowLeft, Key, Github } from 'lucide-vue-next'
+import { Download, ArrowLeft, Key, Github, Search, Settings } from 'lucide-vue-next'
 import Sidebar from '@/components/Sidebar.vue'
-import OperationView from '@/components/OperationView.vue'
-import GroupEndpointsView from '@/components/GroupEndpointsView.vue'
-import ThemeToggle from '@/components/ThemeToggle.vue'
 import DownloadDialog from '@/components/DownloadDialog.vue'
 import AuthorizationSettingsDialog from '@/components/AuthorizationSettingsDialog.vue'
+import SettingsDialog from '@/components/SettingsDialog.vue'
 import Dialog from '@/components/ui/Dialog.vue'
 import Button from '@/components/ui/Button.vue'
+import Input from '@/components/ui/Input.vue'
+
+// Lazy load heavy components for better code splitting
+const OperationView = defineAsyncComponent(() => import('@/components/OperationView.vue'))
+const GroupEndpointsView = defineAsyncComponent(() => import('@/components/GroupEndpointsView.vue'))
 import type { SpecWithSource } from '@/stores/spec'
 import { useToast } from '@/composables/useToast'
 import { useSpecStore } from '@/stores/spec'
@@ -191,6 +252,8 @@ import { useLastWorkspaceStore } from '@/stores/lastWorkspace'
 import type { OpenAPISpec, TagNode, Operation } from '@/types/openapi'
 import { parseOpenAPISpec, parseMultipleSpecs, findNodeByPath, findNodeBySlug, toSlug, endpointPathToSlug, slugToEndpointPath } from '@/utils/openapi-parser'
 import { clearOperationCaches } from '@/utils/operation-cache'
+import { searchAllOperations, type SearchResult } from '@/utils/search'
+import { getMethodColorClass } from '@/utils/operation-cache'
 
 const route = useRoute()
 const router = useRouter()
@@ -205,7 +268,16 @@ const selectedGroup = ref<TagNode | null>(null)
 const showDownloadDialog = ref(false)
 const showAuthorizationDialog = ref(false)
 const showSpecSelectionDialog = ref(false)
+const showSettingsDialog = ref(false)
 const selectedSpecForAuth = ref<SpecWithSource | null>(null)
+const globalSearchQuery = ref('')
+const showGlobalSearchResults = ref(false)
+const globalSearchResults = computed<SearchResult[]>(() => {
+  if (!globalSearchQuery.value.trim()) {
+    return []
+  }
+  return searchAllOperations(specStore.specs, globalSearchQuery.value)
+})
 
 // Check if Example mode is enabled
 const isExampleMode = computed(() => {
@@ -770,6 +842,36 @@ watch(() => route.path, () => {
 })
 
 
+// Handle global search result selection
+const handleGlobalSearchSelect = (result: SearchResult) => {
+  // Find the spec by index
+  const spec = specStore.specs[result.specIndex]
+  if (!spec) return
+  
+  // Navigate to the endpoint
+  const slug = endpointPathToSlug(result.path)
+  router.push({
+    path: specStore.specs.length === 1
+      ? `/endpoint/${result.method.toLowerCase()}/${slug}`
+      : `/spec/${result.specIndex}/endpoint/${result.method.toLowerCase()}/${slug}`
+  })
+  
+  // Close search results
+  showGlobalSearchResults.value = false
+  globalSearchQuery.value = ''
+  
+  // Select the operation
+  selectedOperation.value = { method: result.method, path: result.path }
+}
+
+// Handle click outside search to close results
+const handleClickOutsideSearch = (event: MouseEvent) => {
+  const target = event.target as HTMLElement
+  if (!target.closest('.global-search-container')) {
+    showGlobalSearchResults.value = false
+  }
+}
+
 const handleOperationSelect = (method: string, path: string) => {
   // Update URL with slug - state will be restored from route
   const slug = endpointPathToSlug(path)
@@ -816,6 +918,78 @@ const handleBackToSelection = () => {
   selectedGroup.value = null
   router.push('/selection')
 }
+
+// Compute page title based on selected operation/group/spec
+const pageTitle = computed(() => {
+  // If no specs loaded
+  if (specStore.specs.length === 0) {
+    return 'Specula'
+  }
+  
+  // If operation is selected
+  if (selectedOperation.value) {
+    const { method, path } = selectedOperation.value
+    
+    // Find the operation and spec
+    let operation: Operation | null = null
+    let specTitle: string | undefined = undefined
+    
+    for (const specWithSource of specStore.specs) {
+      const pathItem = specWithSource.spec.paths[path]
+      if (pathItem) {
+        const op = pathItem[method.toLowerCase() as keyof typeof pathItem]
+        if (op) {
+          operation = op
+          specTitle = specWithSource.title || specWithSource.spec?.info?.title
+          break
+        }
+      }
+    }
+    
+    if (operation) {
+      const summary = operation.summary || operation.operationId || path
+      const parts = [method, path]
+      if (summary && summary !== path) {
+        parts.unshift(summary)
+      }
+      if (specTitle && specStore.specs.length > 1) {
+        parts.push(`- ${specTitle}`)
+      }
+      return `${parts.join(' ')} | Specula`
+    }
+    
+    // Fallback if operation not found
+    return `${method} ${path} | Specula`
+  }
+  
+  // If group is selected
+  if (selectedGroup.value) {
+    const groupName = selectedGroup.value.name
+    const specTitle = specStore.specs.length === 1 
+      ? (specStore.specs[0].title || specStore.specs[0].spec?.info?.title)
+      : undefined
+    
+    if (specTitle && specStore.specs.length > 1) {
+      return `${groupName} - ${specTitle} | Specula`
+    }
+    return `${groupName} | Specula`
+  }
+  
+  // Default: show spec title(s)
+  if (specStore.specs.length === 1) {
+    const specTitle = specStore.specs[0].title || specStore.specs[0].spec?.info?.title || 'OpenAPI Specification'
+    return `${specTitle} | Specula`
+  }
+  
+  return `${specStore.specs.length} Specifications | Specula`
+})
+
+// Watch page title and update document.title
+watch(pageTitle, (newTitle) => {
+  if (typeof document !== 'undefined') {
+    document.title = newTitle
+  }
+}, { immediate: true })
 
 const operationDetails = computed(() => {
   if (specStore.specs.length === 0 || !selectedOperation.value) return null
