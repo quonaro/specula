@@ -1,5 +1,5 @@
 <template>
-  <Dialog :model-value="open" @update:model-value="$emit('update:open', $event)" title="Settings">
+  <Dialog :model-value="modelValue" @update:model-value="$emit('update:modelValue', $event)" title="Settings">
     <div class="space-y-6">
       <!-- Theme Selection -->
       <div class="space-y-2">
@@ -59,12 +59,12 @@ import { useThemeStore } from '@/stores/theme'
 import { useSettingsStore } from '@/stores/settings'
 
 interface Props {
-  open: boolean
+  modelValue: boolean
 }
 
 defineProps<Props>()
 defineEmits<{
-  'update:open': [value: boolean]
+  'update:modelValue': [value: boolean]
 }>()
 
 const themeStore = useThemeStore()

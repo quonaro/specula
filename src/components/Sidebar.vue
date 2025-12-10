@@ -94,6 +94,7 @@ import { filterTagNodeBySecurityAndMethods } from '@/utils/filter'
 import { useSpecStore } from '@/stores/spec'
 import { storeToRefs } from 'pinia'
 import { getMethodColorClass } from '@/utils/operation-cache'
+import { getLogoUrl } from '@/utils/logo'
 
 interface Props {
   root: TagNode

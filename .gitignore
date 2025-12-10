@@ -8,6 +8,8 @@ dist
 dist-ssr
 *.local
 
+test
+
 # Environment variables
 .env
 .env.local

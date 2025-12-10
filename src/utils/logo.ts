@@ -1,3 +1,8 @@
+// Import logo as asset - Vite will handle it automatically
+// In standalone build, Vite will inline it (assetsInlineLimit: 500000)
+// In regular build, Vite will provide correct URL with base path
+import logoUrl from '/logo.png'
+
 // Logo utility for standalone and regular modes
 export function getLogoUrl(): string {
     // In standalone mode, check if logo URL is available in window
@@ -7,7 +12,7 @@ export function getLogoUrl(): string {
             return standaloneLogo
         }
     }
-    // Default path for regular mode
-    return '/logo.png'
+    // For regular mode, use imported logo - Vite will provide correct path with base URL
+    return logoUrl
 }
 

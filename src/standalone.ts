@@ -9,8 +9,8 @@ import { useThemeStore } from './stores/theme'
 import { useSettingsStore } from './stores/settings'
 import { useSpecStore } from './stores/spec'
 import type { OpenAPISpec } from './types/openapi'
-// Import embedded logo for standalone bundle
-import { EMBEDDED_LOGO_BASE64 as logoUrl } from './utils/logo-embedded'
+// Import logo as asset - Vite will inline it automatically in standalone build (assetsInlineLimit: 500000)
+import logoUrl from '/logo.png'
 
 // Import pages directly for standalone bundle (no code splitting)
 import Index from './pages/Index.vue'
