@@ -4,7 +4,7 @@
     <div class="w-1/2 border-r border-border overflow-y-auto p-6 flex flex-col">
       <div class="flex items-center justify-between mb-8">
         <div class="flex items-center gap-3">
-          <img src="/logo.png" alt="Logo" class="h-12 w-12 logo-image" />
+          <img :src="logoUrl" alt="Logo" class="h-12 w-12 logo-image" />
           <h1 class="text-3xl font-bold tracking-tight">Specula</h1>
         </div>
         <ThemeToggle />
@@ -597,6 +597,7 @@ import { useSpecCacheStore, isHash } from '@/stores/specCache'
 import { useSpecFavoritesStore } from '@/stores/specFavorites'
 import { useLastWorkspaceStore } from '@/stores/lastWorkspace'
 import type { OpenAPISpec } from '@/types/openapi'
+import { getLogoUrl } from '@/utils/logo'
 
 interface Props {
   onSpecLoad: (spec: OpenAPISpec) => void
@@ -610,6 +611,7 @@ const specHistoryStore = useSpecHistoryStore()
 const specCacheStore = useSpecCacheStore()
 const specFavoritesStore = useSpecFavoritesStore()
 const lastWorkspaceStore = useLastWorkspaceStore()
+const logoUrl = computed(() => getLogoUrl())
 const isDragging = ref(false)
 const showUrlInput = ref(true)
 const urlText = ref('')

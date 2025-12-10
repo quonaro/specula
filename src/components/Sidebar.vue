@@ -2,7 +2,7 @@
   <div class="w-80 border-r border-sidebar-border bg-sidebar h-screen flex flex-col">
     <div class="p-4 border-b border-sidebar-border">
       <div class="flex items-center gap-2 mb-3">
-        <img src="/logo.png" alt="Logo" class="h-8 logo-image" />
+        <img :src="logoUrl" alt="Logo" class="h-8 logo-image" />
         <span class="text-lg font-semibold text-sidebar-foreground">Specula</span>
       </div>
       <div class="relative mb-2">
@@ -101,6 +101,8 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+
+const logoUrl = computed(() => getLogoUrl())
 
 const emit = defineEmits<{
   (e: 'operationSelect', method: string, path: string): void

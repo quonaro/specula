@@ -170,7 +170,7 @@
         />
         <div v-else class="flex items-center justify-center h-full">
           <div class="text-center space-y-2">
-            <img src="/logo.png" alt="Logo" class="mx-auto h-16 w-16 logo-image-opacity" />
+            <img :src="logoUrl" alt="Logo" class="mx-auto h-16 w-16 logo-image-opacity" />
             <p class="text-lg font-medium text-foreground">
               Select an operation
             </p>
@@ -203,6 +203,7 @@
     
     <!-- Spec Selection Dialog for Authorization -->
     <Dialog
+      v-if="!isStandaloneMode()"
       v-model="showSpecSelectionDialog"
       title="Select Specification"
       :close-on-backdrop="true"
@@ -255,6 +256,7 @@ import { parseOpenAPISpec, parseMultipleSpecs, findNodeByPath, findNodeBySlug, t
 import { clearOperationCaches } from '@/utils/operation-cache'
 import { searchAllOperations, type SearchResult } from '@/utils/search'
 import { getMethodColorClass } from '@/utils/operation-cache'
+import { getLogoUrl } from '@/utils/logo'
 
 const route = useRoute()
 const router = useRouter()
@@ -268,6 +270,8 @@ const lastWorkspaceStore = useLastWorkspaceStore()
 const isStandaloneMode = () => {
   return typeof window !== 'undefined' && (window as any).__SPECULA_STANDALONE__ === true
 }
+
+const logoUrl = computed(() => getLogoUrl())
 const tagTree = ref<TagNode | null>(null)
 const selectedOperation = ref<{ method: string; path: string } | null>(null)
 const selectedGroup = ref<TagNode | null>(null)

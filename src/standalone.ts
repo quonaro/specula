@@ -9,10 +9,11 @@ import { useThemeStore } from './stores/theme'
 import { useSettingsStore } from './stores/settings'
 import { useSpecStore } from './stores/spec'
 import type { OpenAPISpec } from './types/openapi'
+// Import embedded logo for standalone bundle
+import { EMBEDDED_LOGO_BASE64 as logoUrl } from './utils/logo-embedded'
 
 // Import pages directly for standalone bundle (no code splitting)
 import Index from './pages/Index.vue'
-import Selection from './pages/Selection.vue'
 import NotFound from './pages/NotFound.vue'
 
 export interface SpeculaConfig {
@@ -50,10 +51,10 @@ export async function init(config: SpeculaConfig): Promise<SpeculaInstance> {
   const pinia = createPinia()
 
   // Use hash history for standalone to avoid server configuration issues
+  // No /selection route in standalone mode - always show Index
   const router = createRouter({
     history: createWebHashHistory(),
     routes: [
-      { path: '/selection', component: Selection },
       { path: '/', component: Index },
       { path: '/group/:groupPath', component: Index },
       { path: '/spec/:specId/endpoint/:method/:path(.*)', component: Index },
@@ -90,6 +91,8 @@ export async function init(config: SpeculaConfig): Promise<SpeculaInstance> {
 
   // Mark as standalone mode to disable selection page redirects
   ;(window as any).__SPECULA_STANDALONE__ = true
+  // Make logo URL available globally for components
+  ;(window as any).__SPECULA_LOGO_URL__ = logoUrl
 
   // Load spec BEFORE mounting if provided
   const specStore = useSpecStore()

@@ -28,10 +28,17 @@ export default defineConfig({
                     if (assetInfo.name && assetInfo.name.endsWith('.css')) {
                         return 'specula.css'
                     }
+                    // Inline images as base64 for standalone bundle
+                    if (/\.(png|jpg|jpeg|svg|gif)$/.test(assetInfo.name || '')) {
+                        // Return a placeholder - assets will be inlined
+                        return 'assets/[name][extname]'
+                    }
                     return 'assets/[name][extname]'
                 }
             }
         },
+        // Inline assets up to 500KB for standalone (to include logo)
+        assetsInlineLimit: 500000,
         // Minify
         minify: 'esbuild',
         // Disable source maps for smaller size (can enable if needed)
