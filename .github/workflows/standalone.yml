@@ -83,6 +83,8 @@ jobs:
 
           ## Quick Start
 
+          ### Option 1: Using jsDelivr CDN
+
           Include Specula in your HTML page using jsDelivr CDN:
 
           ```html
@@ -100,6 +102,35 @@ jobs:
           <body>
               <div id="specula-container"></div>
               <script src="https://cdn.jsdelivr.net/gh/quonaro/Specula@standalone/specula.js"></script>
+              <script>
+                  Specula.init({
+                      container: '#specula-container',
+                      openapi: 'https://petstore3.swagger.io/api/v3/openapi.json'
+                  });
+              </script>
+          </body>
+          </html>
+          ```
+
+          ### Option 2: Using Custom CDN
+
+          Include Specula in your HTML page using custom CDN:
+
+          ```html
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>My API Documentation</title>
+              <link rel="stylesheet" href="https://cdn.d3vb0x.ru/Specula/specula.css">
+              <style>
+                  #specula-container { width: 100%; height: 100vh; }
+              </style>
+          </head>
+          <body>
+              <div id="specula-container"></div>
+              <script src="https://cdn.d3vb0x.ru/Specula/specula.js"></script>
               <script>
                   Specula.init({
                       container: '#specula-container',
@@ -136,4 +167,29 @@ jobs:
           git add specula.js specula.css index.html README.md
           git commit -m "Update standalone bundle [skip ci]" || exit 0
           git push https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git standalone --force
+
+      - name: Deploy to CDN
+        env:
+          CDN_SSH_KEY: ${{ secrets.CDN_SSH_KEY }}
+          CDN_HOST: cdn.d3vb0x.ru
+          CDN_USER: cdn
+          CDN_PORT: 58928
+        run: |
+          # Setup SSH
+          mkdir -p ~/.ssh
+          echo "$CDN_SSH_KEY" > ~/.ssh/cdn_key
+          chmod 600 ~/.ssh/cdn_key
+          ssh-keyscan -p $CDN_PORT $CDN_HOST >> ~/.ssh/known_hosts 2>/dev/null || true
+          
+          # Create directory on CDN server if it doesn't exist
+          ssh -i ~/.ssh/cdn_key -p $CDN_PORT -o StrictHostKeyChecking=no $CDN_USER@$CDN_HOST \
+            "mkdir -p /home/cdn/files/Specula"
+          
+          # Copy files to CDN
+          scp -i ~/.ssh/cdn_key -P $CDN_PORT -o StrictHostKeyChecking=no \
+            dist/specula.js dist/specula.css \
+            $CDN_USER@$CDN_HOST:/home/cdn/files/Specula/
+          
+          # Cleanup
+          rm -f ~/.ssh/cdn_key
 
