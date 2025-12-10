@@ -1,5 +1,5 @@
 // Import logo as asset - Vite will handle it automatically
-// In standalone build, Vite will inline it (assetsInlineLimit: 500000)
+// In standalone build, vite-plugin-logo-base64 will replace it with Base64 string
 // In regular build, Vite will provide correct URL with base path
 import logoUrl from '/logo.png'
 

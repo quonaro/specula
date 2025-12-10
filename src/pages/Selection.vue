@@ -1,29 +1,46 @@
 <template>
   <div class="flex min-h-screen bg-background">
-    <div class="w-full max-w-4xl mx-auto p-6">
-      <!-- URL Load Section (only in example mode) -->
-      <div v-if="isExampleMode" class="mb-6 p-4 border border-border rounded-lg bg-muted/30">
-        <h2 class="text-lg font-semibold mb-3">Load from URL</h2>
-        <div class="flex gap-2">
-          <input
-            v-model="urlInput"
-            type="url"
-            placeholder="https://example.com/openapi.json"
-            class="flex-1 px-3 py-2 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            @keyup.enter="handleLoadFromUrl"
-          />
-          <button
-            @click="handleLoadFromUrl"
-            :disabled="isLoadingUrl || !urlInput.trim()"
-            class="px-4 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+    <div class="w-full p-6">
+      <div class="flex gap-6">
+        <!-- Left sidebar with accordion (only in example mode) -->
+        <div v-if="isExampleMode" class="w-80 shrink-0">
+          <Accordion
+            :items="accordionItems"
+            type="single"
+            className="border border-border rounded-lg bg-muted/30"
           >
-            {{ isLoadingUrl ? 'Loading...' : 'Load' }}
-          </button>
+            <template #trigger="{ item }">
+              <span class="font-semibold">{{ item.label }}</span>
+            </template>
+            <template #content="{ item }">
+              <div class="space-y-3">
+                <div class="flex gap-2">
+                  <input
+                    v-model="urlInput"
+                    type="url"
+                    placeholder="https://example.com/openapi.json"
+                    class="flex-1 px-3 py-2 rounded-md border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                    @keyup.enter="handleLoadFromUrl"
+                  />
+                  <button
+                    @click="handleLoadFromUrl"
+                    :disabled="isLoadingUrl || !urlInput.trim()"
+                    class="px-4 py-2 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+                  >
+                    {{ isLoadingUrl ? 'Loading...' : 'Load' }}
+                  </button>
+                </div>
+                <p v-if="urlError" class="text-sm text-destructive">{{ urlError }}</p>
+              </div>
+            </template>
+          </Accordion>
         </div>
-        <p v-if="urlError" class="mt-2 text-sm text-destructive">{{ urlError }}</p>
-      </div>
 
-      <FileUpload @spec-load="handleSpecLoad" @specs-load="handleSpecsLoad" />
+        <!-- Main content area -->
+        <div class="flex-1 min-w-0">
+          <FileUpload @spec-load="handleSpecLoad" @specs-load="handleSpecsLoad" />
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -32,6 +49,7 @@
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import FileUpload from '@/components/FileUpload.vue'
+import Accordion from '@/components/ui/Accordion.vue'
 import { useSpecStore } from '@/stores/spec'
 import { useSpecHistoryStore } from '@/stores/specHistory'
 import { useToast } from '@/composables/useToast'
@@ -45,6 +63,15 @@ const { toast } = useToast()
 // Example mode check
 const isExampleMode = computed(() => {
   return import.meta.env.VITE_EXAMPLE === 'true'
+})
+
+// Accordion items for URL loading
+const accordionItems = computed(() => {
+  if (!isExampleMode.value) return []
+  return [{
+    label: 'Load from URL',
+    value: 'load-from-url'
+  }]
 })
 
 // URL loading state

@@ -1,10 +1,11 @@
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 import path from "path";
+import { logoBase64Plugin } from "./vite-plugin-logo-base64";
 
 export default defineConfig({
     base: './',
-    plugins: [vue()],
+    plugins: [vue(), logoBase64Plugin()],
     define: {
         // Disable backend checking in standalone version
         'import.meta.env.VITE_WITHOUT_BACKEND': '"true"',

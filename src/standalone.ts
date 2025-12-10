@@ -9,7 +9,7 @@ import { useThemeStore } from './stores/theme'
 import { useSettingsStore } from './stores/settings'
 import { useSpecStore } from './stores/spec'
 import type { OpenAPISpec } from './types/openapi'
-// Import logo as asset - Vite will inline it automatically in standalone build (assetsInlineLimit: 500000)
+// Import logo - will be replaced with Base64 string by vite-plugin-logo-base64 in standalone build
 import logoUrl from '/logo.png'
 
 // Import pages directly for standalone bundle (no code splitting)
