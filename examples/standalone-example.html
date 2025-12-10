@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,6 +10,7 @@
             margin: 0;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
         }
+
         #specula-container {
             width: 100%;
             height: 100vh;
@@ -17,6 +19,7 @@
     <!-- Load Specula CSS from jsDelivr CDN -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/quonaro/Specula@standalone/specula.css">
 </head>
+
 <body>
     <!-- Container for Specula -->
     <div id="specula-container"></div>
@@ -33,18 +36,18 @@
             //     'https://petstore3.swagger.io/api/v3/openapi.json',
             //     'https://api.example.com/openapi.json'
             // ]
-        }).then(function(specula) {
+        }).then(function (specula) {
             console.log('Specula initialized successfully!', specula);
-            
+
             // You can load additional specs later:
             // specula.loadSpec('https://api.example.com/openapi.json');
-            
+
             // Or destroy the instance:
             // specula.destroy();
-        }).catch(function(error) {
+        }).catch(function (error) {
             console.error('Failed to initialize Specula:', error);
         });
     </script>
 </body>
-</html>
 
+</html>
