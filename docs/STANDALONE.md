@@ -4,9 +4,9 @@ Specula can be easily integrated into any HTML page using a standalone bundle. T
 
 ## Getting Started
 
-### Option 1: Use from GitHub CDN (Recommended)
+### Option 1: Use from jsDelivr CDN (Recommended)
 
-The easiest way to use Specula is to load it directly from GitHub:
+The easiest way to use Specula is to load it from jsDelivr CDN, which supports CORS:
 
 ```html
 <!DOCTYPE html>
@@ -15,8 +15,8 @@ The easiest way to use Specula is to load it directly from GitHub:
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My API Documentation</title>
-    <!-- Load Specula CSS from GitHub -->
-    <link rel="stylesheet" href="https://raw.githubusercontent.com/quonaro/Specula/standalone/specula.css">
+    <!-- Load Specula CSS from jsDelivr -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/quonaro/Specula@standalone/specula.css">
     <style>
         #specula-container {
             width: 100%;
@@ -28,8 +28,8 @@ The easiest way to use Specula is to load it directly from GitHub:
     <!-- Container for Specula -->
     <div id="specula-container"></div>
 
-    <!-- Load Specula JavaScript from GitHub -->
-    <script src="https://raw.githubusercontent.com/quonaro/Specula/standalone/specula.js"></script>
+    <!-- Load Specula JavaScript from jsDelivr -->
+    <script src="https://cdn.jsdelivr.net/gh/quonaro/Specula@standalone/specula.js"></script>
     <script>
         // Initialize Specula
         Specula.init({
@@ -174,28 +174,34 @@ See the `examples/standalone-example.html` file for a complete working example.
 
 ## CDN Usage
 
-The standalone bundle is automatically built and available from the `standalone` branch:
+The standalone bundle is automatically built and available via jsDelivr CDN:
 
-- **CSS**: `https://raw.githubusercontent.com/quonaro/Specula/standalone/specula.css`
-- **JS**: `https://raw.githubusercontent.com/quonaro/Specula/standalone/specula.js`
+### Latest Version (Recommended)
+
+- **CSS**: `https://cdn.jsdelivr.net/gh/quonaro/Specula@standalone/specula.css`
+- **JS**: `https://cdn.jsdelivr.net/gh/quonaro/Specula@standalone/specula.js`
 
 The bundle is automatically updated whenever changes are pushed to the `main` branch.
 
 ### Using a Specific Version
 
-To pin to a specific commit or tag, replace `standalone` in the URL with the commit hash or tag name:
+To pin to a specific commit or tag, replace `@standalone` in the URL:
 
 ```html
 <!-- Using a specific commit -->
-<link rel="stylesheet" href="https://raw.githubusercontent.com/quonaro/Specula/abc123def456/specula.css">
-<script src="https://raw.githubusercontent.com/quonaro/Specula/abc123def456/specula.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/quonaro/Specula@abc123def456/specula.css">
+<script src="https://cdn.jsdelivr.net/gh/quonaro/Specula@abc123def456/specula.js"></script>
 
 <!-- Using a tag (e.g., v1.0.0) -->
-<link rel="stylesheet" href="https://raw.githubusercontent.com/quonaro/Specula/v1.0.0/specula.css">
-<script src="https://raw.githubusercontent.com/quonaro/Specula/v1.0.0/specula.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/quonaro/Specula@v1.0.0/specula.css">
+<script src="https://cdn.jsdelivr.net/gh/quonaro/Specula@v1.0.0/specula.js"></script>
 ```
 
-**Note:** When using commits or tags, make sure the standalone bundle was built for that commit/tag. The `standalone` branch always contains the latest build.
+**Note:** 
+- jsDelivr supports CORS, so it can be used directly in `<script>` tags
+- When using commits or tags, make sure the standalone bundle was built for that commit/tag
+- The `standalone` branch always contains the latest build
+- Alternative: You can also use `raw.githubusercontent.com` if you host files in a different branch, but jsDelivr is recommended for better CORS support
 
 ## Notes
 

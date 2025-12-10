@@ -83,7 +83,7 @@ jobs:
 
           ## Quick Start
 
-          Include Specula in your HTML page:
+          Include Specula in your HTML page using jsDelivr CDN:
 
           ```html
           <!DOCTYPE html>
@@ -92,14 +92,14 @@ jobs:
               <meta charset="UTF-8">
               <meta name="viewport" content="width=device-width, initial-scale=1.0">
               <title>My API Documentation</title>
-              <link rel="stylesheet" href="https://raw.githubusercontent.com/quonaro/Specula/standalone/specula.css">
+              <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/quonaro/Specula@standalone/specula.css">
               <style>
                   #specula-container { width: 100%; height: 100vh; }
               </style>
           </head>
           <body>
               <div id="specula-container"></div>
-              <script src="https://raw.githubusercontent.com/quonaro/Specula/standalone/specula.js"></script>
+              <script src="https://cdn.jsdelivr.net/gh/quonaro/Specula@standalone/specula.js"></script>
               <script>
                   Specula.init({
                       container: '#specula-container',

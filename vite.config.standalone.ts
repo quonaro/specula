@@ -17,7 +17,7 @@ export default defineConfig({
         // Single bundle - no chunk splitting
         inlineDynamicImports: true,
         format: 'iife',
-        name: 'Specula',
+        // Don't set name here - we manually assign to window.Specula in the code
         // Single file output
         entryFileNames: 'specula.js',
         assetFileNames: (assetInfo) => {
