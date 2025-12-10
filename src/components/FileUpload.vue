@@ -103,7 +103,7 @@
         </div>
 
         <!-- URL Section -->
-        <div v-if="!withoutBackend">
+        <div v-if="!withoutBackend || showExample">
           <button
             @click="toggleSection('url')"
             class="w-full flex items-center justify-between py-3 text-sm font-medium hover:text-foreground transition-colors text-muted-foreground group"
