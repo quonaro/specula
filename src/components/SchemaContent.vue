@@ -3,7 +3,7 @@
     <p v-if="schema.description" class="text-sm text-muted-foreground">
       {{ schema.description }}
     </p>
-    
+
     <div class="flex flex-wrap gap-2">
       <Badge v-if="schema.type" variant="outline">type: {{ schema.type }}</Badge>
       <Badge v-if="schema.format" variant="outline">format: {{ schema.format }}</Badge>
@@ -42,24 +42,16 @@
         <div v-for="[propName, propSchema] in Object.entries(schema.properties)" :key="propName">
           <div class="flex items-center gap-2">
             <code class="text-sm font-mono">{{ propName }}</code>
-            <Badge v-if="isRequired(propName)" variant="destructive" class="text-xs">required</Badge>
+            <Badge v-if="isRequired(propName)" variant="destructive" class="text-[10px] px-1.5 py-0">required</Badge>
           </div>
-          <SchemaContent
-            :schema="resolver.resolve(propSchema)"
-            :resolver="resolver"
-            :depth="depth + 1"
-          />
+          <SchemaContent :schema="resolver.resolve(propSchema)" :resolver="resolver" :depth="depth + 1" />
         </div>
       </div>
     </div>
 
     <div v-if="schema.items" class="mt-3">
       <span class="text-sm font-semibold">Array items:</span>
-      <SchemaContent
-        :schema="resolver.resolve(schema.items)"
-        :resolver="resolver"
-        :depth="depth + 1"
-      />
+      <SchemaContent :schema="resolver.resolve(schema.items)" :resolver="resolver" :depth="depth + 1" />
     </div>
 
     <div v-if="schema.example !== undefined" class="mt-2">
@@ -88,4 +80,3 @@ const isRequired = (propName: string) => {
   return props.schema.required?.includes(propName) || false
 }
 </script>
-

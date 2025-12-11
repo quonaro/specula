@@ -51,7 +51,8 @@
                     <Badge variant="outline" class="text-xs">
                       {{ resolver.resolve(param).in }}
                     </Badge>
-                    <Badge v-if="resolver.resolve(param).required" variant="destructive" class="text-xs">
+                    <Badge v-if="resolver.resolve(param).required" variant="destructive"
+                      class="text-[10px] px-1.5 py-0">
                       required
                     </Badge>
                     <Badge v-if="resolver.resolve(param).deprecated" variant="destructive" class="text-xs">
@@ -94,7 +95,7 @@
                 <p v-if="resolvedBody.description" class="text-sm text-muted-foreground">
                   {{ resolvedBody.description }}
                 </p>
-                <Badge v-if="resolvedBody.required" variant="destructive" class="text-xs">
+                <Badge v-if="resolvedBody.required" variant="destructive" class="text-[10px] px-1.5 py-0">
                   required
                 </Badge>
                 <div v-for="[contentType, mediaType] in Object.entries(resolvedBody.content || {})" :key="contentType"

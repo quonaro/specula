@@ -37,7 +37,7 @@
             <Badge variant="outline" class="text-xs">
               {{ resolver.resolve(param).in }}
             </Badge>
-            <Badge v-if="resolver.resolve(param).required" variant="destructive" class="text-xs">
+            <Badge v-if="resolver.resolve(param).required" variant="destructive" class="text-[10px] px-1.5 py-0">
               required
             </Badge>
             <Badge v-if="isFileParameter(param)" variant="outline" class="text-xs">
