@@ -38,16 +38,40 @@ export const useSpecCacheStore = defineStore('specCache', () => {
   const cache = ref<Map<string, CachedSpec>>(new Map())
 
   // Load cache from localStorage
+  // Optimized: split large arrays into chunks to avoid blocking UI
   const loadCache = () => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY)
       if (stored) {
         const parsed = JSON.parse(stored) as CachedSpec[]
         const cacheMap = new Map<string, CachedSpec>()
-        parsed.forEach(item => {
-          cacheMap.set(item.hash, item)
-        })
-        cache.value = cacheMap
+        
+        // For large arrays, process in chunks to avoid blocking UI
+        const CHUNK_SIZE = 50
+        if (parsed.length > CHUNK_SIZE) {
+          let index = 0
+          const processChunk = () => {
+            const chunk = parsed.slice(index, index + CHUNK_SIZE)
+            chunk.forEach(item => {
+              cacheMap.set(item.hash, item)
+            })
+            index += CHUNK_SIZE
+            
+            if (index < parsed.length) {
+              // Use requestAnimationFrame to allow browser to render between chunks
+              requestAnimationFrame(processChunk)
+            } else {
+              cache.value = cacheMap
+            }
+          }
+          processChunk()
+        } else {
+          // Small arrays can be processed immediately
+          parsed.forEach(item => {
+            cacheMap.set(item.hash, item)
+          })
+          cache.value = cacheMap
+        }
       }
     } catch (error) {
       console.error('Failed to load spec cache:', error)

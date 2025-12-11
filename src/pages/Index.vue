@@ -228,16 +228,20 @@ const isExampleMode = computed(() => {
 })
 
 // Check if any spec has security schemes
+// Optimized: cache specs array to avoid reactive lookups
 const hasSecuritySchemes = computed(() => {
-  return specStore.specs.some(spec => {
+  const specs = specStore.specs
+  return specs.some(spec => {
     const securitySchemes = spec.spec?.components?.securitySchemes
     return securitySchemes && Object.keys(securitySchemes).length > 0
   })
 })
 
 // Get specs that have security schemes
+// Optimized: cache specs array to avoid reactive lookups
 const specsWithSecuritySchemes = computed(() => {
-  return specStore.specs.filter(spec => {
+  const specs = specStore.specs
+  return specs.filter(spec => {
     const securitySchemes = spec.spec?.components?.securitySchemes
     return securitySchemes && Object.keys(securitySchemes).length > 0
   })
@@ -1136,9 +1140,14 @@ const handleBackToSelection = () => {
 }
 
 // Compute page title based on selected operation/group/spec
+// Optimized: cache reactive data access to avoid multiple reactive lookups
 const pageTitle = computed(() => {
+  // Cache specs array and length to avoid multiple reactive lookups
+  const specs = specStore.specs
+  const specsLength = specs.length
+  
   // If no specs loaded
-  if (specStore.specs.length === 0) {
+  if (specsLength === 0) {
     return 'Specula'
   }
 
@@ -1150,7 +1159,8 @@ const pageTitle = computed(() => {
     let operation: Operation | null = null
     let specTitle: string | undefined = undefined
 
-    for (const specWithSource of specStore.specs) {
+    // Cache specs array reference to avoid reactive lookups in loop
+    for (const specWithSource of specs) {
       const pathItem = specWithSource.spec.paths[path]
       if (pathItem) {
         const op = pathItem[method.toLowerCase() as keyof typeof pathItem]
@@ -1168,7 +1178,8 @@ const pageTitle = computed(() => {
       if (summary && summary !== path) {
         parts.unshift(summary)
       }
-      if (specTitle && specStore.specs.length > 1) {
+      // Use cached specsLength instead of accessing specStore.specs.length again
+      if (specTitle && specsLength > 1) {
         parts.push(`- ${specTitle}`)
       }
       return `${parts.join(' ')} | Specula`
@@ -1181,23 +1192,26 @@ const pageTitle = computed(() => {
   // If group is selected
   if (selectedGroup.value) {
     const groupName = selectedGroup.value.name
-    const specTitle = specStore.specs.length === 1
-      ? (specStore.specs[0].title || specStore.specs[0].spec?.info?.title)
+    // Cache first spec access
+    const specTitle = specsLength === 1
+      ? (specs[0].title || specs[0].spec?.info?.title)
       : undefined
 
-    if (specTitle && specStore.specs.length > 1) {
+    // Use cached specsLength
+    if (specTitle && specsLength > 1) {
       return `${groupName} - ${specTitle} | Specula`
     }
     return `${groupName} | Specula`
   }
 
   // Default: show spec title(s)
-  if (specStore.specs.length === 1) {
-    const specTitle = specStore.specs[0].title || specStore.specs[0].spec?.info?.title || 'OpenAPI Specification'
+  // Use cached specsLength and first spec
+  if (specsLength === 1) {
+    const specTitle = specs[0].title || specs[0].spec?.info?.title || 'OpenAPI Specification'
     return `${specTitle} | Specula`
   }
 
-  return `${specStore.specs.length} Specifications | Specula`
+  return `${specsLength} Specifications | Specula`
 })
 
 // Watch page title and update document.title
@@ -1208,17 +1222,26 @@ watch(pageTitle, (newTitle) => {
 }, { immediate: true })
 
 const operationDetails = computed(() => {
-  if (specStore.specs.length === 0 || !selectedOperation.value) return null
+  // Cache specs array and selectedOperation to avoid multiple reactive lookups
+  const specs = specStore.specs
+  const selectedOp = selectedOperation.value
+  
+  if (specs.length === 0 || !selectedOp) return null
+
+  // Cache method and path to avoid repeated property access
+  const method = selectedOp.method.toLowerCase()
+  const path = selectedOp.path
 
   // Find the spec that contains this operation
-  for (const specWithSource of specStore.specs) {
-    const pathItem = specWithSource.spec.paths[selectedOperation.value.path]
+  // Use cached specs array reference
+  for (const specWithSource of specs) {
+    const pathItem = specWithSource.spec.paths[path]
     if (pathItem) {
-      const operation = pathItem[selectedOperation.value.method.toLowerCase() as keyof typeof pathItem] as Operation | undefined
+      const operation = pathItem[method as keyof typeof pathItem] as Operation | undefined
       if (operation) {
         return {
-          method: selectedOperation.value.method,
-          path: selectedOperation.value.path,
+          method: selectedOp.method,
+          path: selectedOp.path,
           operation,
           spec: specWithSource.spec,
           sourceUrl: specWithSource.sourceUrl,
