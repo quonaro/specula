@@ -346,13 +346,13 @@
                   {{ response.status }}
                 </Badge>
               </div>
-              <Button v-if="response" variant="ghost" size="sm" @click="handleCopy(getResponseText())">
+              <Button v-if="response" variant="ghost" size="sm" @click="handleCopy(getResponseText)">
                 <Check v-if="copied" class="w-4 h-4" />
                 <Copy v-else class="w-4 h-4" />
               </Button>
             </div>
 
-            <Textarea :model-value="getResponseText()" readonly
+            <Textarea :model-value="getResponseText" readonly
               class="h-[400px] w-full bg-code-bg border border-code-border text-xs font-mono resize-none" />
           </Card>
         </div>
@@ -362,7 +362,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch, onMounted } from 'vue'
+import { computed, ref, watch, onMounted, shallowRef } from 'vue'
 import { Copy, Check, Key, Server, FileText, Settings } from 'lucide-vue-next'
 import type { Operation, OpenAPISpec, PathItem } from '@/types/openapi'
 import { RefResolver } from '@/utils/ref-resolver'
@@ -429,6 +429,11 @@ const schemaJsonCopied = ref<Map<string, boolean>>(new Map())
 // Track copied state for each response example (Response format)
 const responseExampleCopied = ref<Map<string, boolean>>(new Map())
 
+// Cache for expensive JSON generation operations
+const schemaJsonCache = ref<Map<string, string>>(new Map())
+const responseExampleCache = ref<Map<string, string>>(new Map())
+const responseTextCache = shallowRef<string>('')
+
 // Authorization management
 const authorizationStore = useAuthorizationStore()
 
@@ -460,6 +465,12 @@ watch(() => [props.spec, props.sourceUrl], () => {
   initializeLocalCredentials()
 }, { immediate: true })
 
+// Watch for operation changes and clear caches
+watch(() => [props.operation, props.path, props.method], () => {
+  // Clear caches when operation changes to free memory and prevent stale data
+  schemaJsonCache.value.clear()
+  responseExampleCache.value.clear()
+}, { immediate: false, deep: false })
 
 // Initialize on mount
 onMounted(() => {
@@ -614,8 +625,8 @@ const handleResponse = (responseData: any) => {
   }
 }
 
-// Get response text for display
-const getResponseText = (): string => {
+// Get response text for display with caching
+const getResponseText = computed((): string => {
   if (!response.value) {
     return 'No response yet. Execute a request to see the response here.'
   }
@@ -656,7 +667,7 @@ const getResponseText = (): string => {
     // Fallback: return stringified response object
     return JSON.stringify(response.value, null, 2)
   }
-}
+})
 
 // Copy text to clipboard with fallback
 const copyToClipboard = async (text: string): Promise<boolean> => {
@@ -729,13 +740,28 @@ const setResponseFormat = (code: string, contentType: string, format: 'beauty' |
   responseSchemaFormats.value.set(key, format)
 }
 
-// Convert schema to JSON string (for Metadata format)
+// Convert schema to JSON string (for Metadata format) with caching
 const getSchemaAsJson = (schema: any): string => {
   try {
+    // Create cache key from schema reference
+    const cacheKey = JSON.stringify(schema)
+
+    if (schemaJsonCache.value.has(cacheKey)) {
+      return schemaJsonCache.value.get(cacheKey)!
+    }
+
     const resolvedSchema = resolver.resolve(schema)
-    return JSON.stringify(resolvedSchema, null, 2)
+    const result = JSON.stringify(resolvedSchema, null, 2)
+
+    // Cache result (limit cache size to prevent memory issues)
+    if (schemaJsonCache.value.size < 50) {
+      schemaJsonCache.value.set(cacheKey, result)
+    }
+
+    return result
   } catch (error) {
-    return JSON.stringify(schema, null, 2)
+    const fallback = JSON.stringify(schema, null, 2)
+    return fallback
   }
 }
 
@@ -831,14 +857,28 @@ const generateExampleFromSchema = (schema: any): any => {
   }
 }
 
-// Get example response JSON string (for Response format)
+// Get example response JSON string (for Response format) with caching
 const getResponseExampleJson = (schema: any): string => {
   try {
+    // Create cache key from schema reference
+    const cacheKey = JSON.stringify(schema)
+
+    if (responseExampleCache.value.has(cacheKey)) {
+      return responseExampleCache.value.get(cacheKey)!
+    }
+
     const example = generateExampleFromSchema(schema)
     if (example === null || example === undefined) {
       return 'null'
     }
-    return JSON.stringify(example, null, 2)
+    const result = JSON.stringify(example, null, 2)
+
+    // Cache result (limit cache size to prevent memory issues)
+    if (responseExampleCache.value.size < 50) {
+      responseExampleCache.value.set(cacheKey, result)
+    }
+
+    return result
   } catch (error) {
     return '{}'
   }
