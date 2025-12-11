@@ -39,7 +39,7 @@
     <!-- Columns with separate scroll -->
     <div class="flex-1 grid grid-cols-2 gap-6 px-8 pb-8 min-h-0">
       <!-- Main Content (Left Column) -->
-      <ScrollArea class="h-full [&>div::-webkit-scrollbar]:hidden [&>div]:[scrollbar-width:none]">
+      <ScrollArea class="h-full">
         <div class="space-y-6 pr-4">
           <!-- Operation-specific Servers -->
           <template v-if="operation.servers && operation.servers.length > 0">
@@ -316,7 +316,7 @@
       </ScrollArea>
 
       <!-- Try It Out (Right Column) -->
-      <ScrollArea class="h-full [&>div::-webkit-scrollbar]:hidden [&>div]:[scrollbar-width:none]">
+      <ScrollArea class="h-full">
         <div class="space-y-6 pl-4">
           <!-- Security (Authorization) -->
           <template v-if="operationSecurity && operationSecurity.length > 0">
