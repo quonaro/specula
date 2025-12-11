@@ -175,6 +175,11 @@ const emit = defineEmits<{
 
 const { toast } = useToast()
 const resolver = new RefResolver(props.spec)
+
+// Get effective security requirements for this operation
+const operationSecurity = computed(() => {
+  return getOperationSecurity(props.operation, props.pathItem, props.spec)
+})
 const isExecuting = ref(false)
 const abortController = ref<AbortController | null>(null)
 const response = ref<any>(null)
@@ -541,23 +546,14 @@ const getRequestHeaders = (): { headers: Record<string, string>; cookies: string
   const headers: Record<string, string> = {}
   const cookies: string[] = []
   
-<<<<<<< HEAD
-  // Add authorization headers and cookies according to OpenAPI spec
+  // Add authorization headers according to OpenAPI SecurityScheme specification
   if (props.authorizationCredentials && operationSecurity.value) {
     operationSecurity.value.forEach((sec) => {
-=======
-  // Add authorization headers according to OpenAPI SecurityScheme specification
-  if (props.authorizationCredentials && props.operation.security) {
-    props.operation.security.forEach((sec) => {
->>>>>>> cd8a85d (Refactor OperationView and TryItOut components for improved clarity and functionality; streamline server URL handling, enhance authorization header management according to OpenAPI specifications, and ensure consistent response handling. These changes simplify the user interface and improve the overall user experience.)
       Object.keys(sec).forEach((scheme) => {
         const credential = props.authorizationCredentials?.[scheme]
         if (credential) {
           const securityScheme = props.spec.components?.securitySchemes?.[scheme]
           if (securityScheme) {
-<<<<<<< HEAD
-            applySecurityScheme(scheme, credential, securityScheme, headers, [], cookies)
-=======
             // Handle different security scheme types
             switch (securityScheme.type) {
               case 'http':
@@ -594,6 +590,7 @@ const getRequestHeaders = (): { headers: Record<string, string>; cookies: string
                   // Query params are handled separately in buildRequestUrl
                 } else if (inLocation === 'cookie') {
                   // Cookies are handled separately
+                  cookies.push(`${encodeURIComponent(name)}=${encodeURIComponent(credential)}`)
                 }
                 break
 
@@ -609,7 +606,6 @@ const getRequestHeaders = (): { headers: Record<string, string>; cookies: string
             } else {
               headers[scheme] = credential
             }
->>>>>>> cd8a85d (Refactor OperationView and TryItOut components for improved clarity and functionality; streamline server URL handling, enhance authorization header management according to OpenAPI specifications, and ensure consistent response handling. These changes simplify the user interface and improve the overall user experience.)
           }
         }
       })
@@ -898,13 +894,8 @@ const handleExecute = async () => {
     const isOctetStreamBody = requestBodyContentType?.includes('application/octet-stream') || 
                               requestBodyContentType?.includes('*/*')
 
-<<<<<<< HEAD
     // Get authorization headers and cookies
     const { headers: authHeaders, cookies } = getRequestHeaders()
-=======
-    // Get authorization headers first
-    const authHeaders = getRequestHeaders()
->>>>>>> cd8a85d (Refactor OperationView and TryItOut components for improved clarity and functionality; streamline server URL handling, enhance authorization header management according to OpenAPI specifications, and ensure consistent response handling. These changes simplify the user interface and improve the overall user experience.)
     const headers: Record<string, string> = { ...authHeaders }
     let body: BodyInit | undefined
 

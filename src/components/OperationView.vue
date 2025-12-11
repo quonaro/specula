@@ -430,45 +430,17 @@
           <Separator />
 
           <!-- Params -->
-<<<<<<< HEAD
-          <template v-if="!isExampleMode">
-            <TryItOut 
-              :method="method" 
-              :path="path" 
-              :operation="operation" 
-              :spec="spec" 
-              :path-item="pathItem"
-              :source-url="sourceUrl"
-              :server-url="getCurrentServerUrl()"
-              :authorization-credentials="getAuthorizationCredentials"
-              @response="handleResponse"
-            />
-          </template>
-          <template v-else>
-            <Card class="p-6 space-y-4">
-              <div class="flex items-center gap-2">
-                <Settings class="w-5 h-5 text-muted-foreground" />
-                <h3 class="text-lg font-semibold text-muted-foreground">Try It Out</h3>
-              </div>
-              <div class="p-4 bg-muted rounded-lg border border-border">
-                <p class="text-sm text-muted-foreground text-center">
-                  Try It Out functionality is disabled in Example mode
-                </p>
-              </div>
-            </Card>
-          </template>
-=======
           <TryItOut 
             :method="method" 
             :path="path" 
             :operation="operation" 
             :spec="spec" 
+            :path-item="pathItem"
             :source-url="sourceUrl"
             :server-url="getCurrentServerUrl()"
             :authorization-credentials="getAuthorizationCredentials"
             @response="handleResponse"
           />
->>>>>>> cd8a85d (Refactor OperationView and TryItOut components for improved clarity and functionality; streamline server URL handling, enhance authorization header management according to OpenAPI specifications, and ensure consistent response handling. These changes simplify the user interface and improve the overall user experience.)
           <Separator />
 
           <!-- Response -->
@@ -609,18 +581,10 @@ const isPrivate = computed(() => {
   return isOperationPrivate(props.operation, pathItem.value, props.spec)
 })
 
-<<<<<<< HEAD
 // Get effective security requirements for this operation
 const operationSecurity = computed(() => {
   return getOperationSecurity(props.operation, pathItem.value, props.spec)
 })
-
-// Check if Example mode is enabled
-const isExampleMode = computed(() => {
-  return import.meta.env.VITE_EXAMPLE === 'true'
-})
-=======
->>>>>>> cd8a85d (Refactor OperationView and TryItOut components for improved clarity and functionality; streamline server URL handling, enhance authorization header management according to OpenAPI specifications, and ensure consistent response handling. These changes simplify the user interface and improve the overall user experience.)
 
 // Server URL management
 const customServerUrl = ref('')
