@@ -85,7 +85,7 @@
       <div class="space-y-2">
         <div class="relative">
           <Textarea :model-value="generatedCommand" readonly
-            class="bg-code-bg border border-code-border text-xs font-mono min-h-[100px] max-h-[300px] resize-none" />
+            class="bg-code-bg border border-code-border text-xs font-mono min-h-[200px] max-h-[600px] resize-none" />
           <Button variant="ghost" size="sm" @click="handleCopyCommand(generatedCommand)" class="absolute top-2 right-2">
             <Check v-if="commandCopied" class="w-4 h-4" />
             <Copy v-else class="w-4 h-4" />
@@ -761,16 +761,25 @@ const generatedCommand = computed(() => {
 })
 
 // Handle copy command
-const handleCopyCommand = (command: string) => {
-  navigator.clipboard.writeText(command)
-  commandCopied.value = true
-  setTimeout(() => {
-    commandCopied.value = false
-  }, 2000)
-  toast({
-    title: 'Copied!',
-    description: 'Command copied to clipboard',
-  })
+const handleCopyCommand = async (command: string) => {
+  try {
+    await navigator.clipboard.writeText(command)
+    commandCopied.value = true
+    setTimeout(() => {
+      commandCopied.value = false
+    }, 2000)
+    toast({
+      title: 'Copied!',
+      description: 'Command copied to clipboard',
+    })
+  } catch (error) {
+    console.error('Failed to copy command:', error)
+    toast({
+      title: 'Copy Failed',
+      description: 'Failed to copy command to clipboard',
+      variant: 'destructive',
+    })
+  }
 }
 
 const handleCancel = () => {

@@ -342,6 +342,7 @@ import { RefResolver } from '@/utils/ref-resolver'
 import { isOperationPrivate, getOperationSecurity } from '@/utils/openapi-parser'
 import { getMethodColorClass } from '@/utils/operation-cache'
 import { useAuthorizationStore } from '@/stores/authorization'
+import { useToast } from '@/composables/useToast'
 import Badge from './ui/Badge.vue'
 import Card from './ui/Card.vue'
 import Button from './ui/Button.vue'
@@ -366,6 +367,7 @@ interface Props {
 const props = defineProps<Props>()
 
 const resolver = new RefResolver(props.spec)
+const { toast } = useToast()
 const resolvedBody = computed(() => {
   if (!props.operation.requestBody) return null
   return resolver.resolve(props.operation.requestBody)
@@ -628,12 +630,25 @@ const getResponseText = (): string => {
 }
 
 // Handle copy
-const handleCopy = (text: string) => {
-  navigator.clipboard.writeText(text)
-  copied.value = true
-  setTimeout(() => {
-    copied.value = false
-  }, 2000)
+const handleCopy = async (text: string) => {
+  try {
+    await navigator.clipboard.writeText(text)
+    copied.value = true
+    setTimeout(() => {
+      copied.value = false
+    }, 2000)
+    toast({
+      title: 'Copied!',
+      description: 'Response copied to clipboard',
+    })
+  } catch (error) {
+    console.error('Failed to copy response:', error)
+    toast({
+      title: 'Copy Failed',
+      description: 'Failed to copy response to clipboard',
+      variant: 'destructive',
+    })
+  }
 }
 
 // Get response schema format (default to 'beauty')
@@ -659,14 +674,27 @@ const getSchemaAsJson = (schema: any): string => {
 }
 
 // Handle copy schema JSON
-const handleCopySchemaJson = (code: string, contentType: string, schema: any) => {
-  const jsonText = getSchemaAsJson(schema)
-  navigator.clipboard.writeText(jsonText)
-  const key = `${code}-${contentType}-json`
-  schemaJsonCopied.value.set(key, true)
-  setTimeout(() => {
-    schemaJsonCopied.value.set(key, false)
-  }, 2000)
+const handleCopySchemaJson = async (code: string, contentType: string, schema: any) => {
+  try {
+    const jsonText = getSchemaAsJson(schema)
+    await navigator.clipboard.writeText(jsonText)
+    const key = `${code}-${contentType}-json`
+    schemaJsonCopied.value.set(key, true)
+    setTimeout(() => {
+      schemaJsonCopied.value.set(key, false)
+    }, 2000)
+    toast({
+      title: 'Copied!',
+      description: 'Schema JSON copied to clipboard',
+    })
+  } catch (error) {
+    console.error('Failed to copy schema JSON:', error)
+    toast({
+      title: 'Copy Failed',
+      description: 'Failed to copy schema JSON to clipboard',
+      variant: 'destructive',
+    })
+  }
 }
 
 // Get copied state for schema JSON
