@@ -541,15 +541,75 @@ const getRequestHeaders = (): { headers: Record<string, string>; cookies: string
   const headers: Record<string, string> = {}
   const cookies: string[] = []
   
+<<<<<<< HEAD
   // Add authorization headers and cookies according to OpenAPI spec
   if (props.authorizationCredentials && operationSecurity.value) {
     operationSecurity.value.forEach((sec) => {
+=======
+  // Add authorization headers according to OpenAPI SecurityScheme specification
+  if (props.authorizationCredentials && props.operation.security) {
+    props.operation.security.forEach((sec) => {
+>>>>>>> cd8a85d (Refactor OperationView and TryItOut components for improved clarity and functionality; streamline server URL handling, enhance authorization header management according to OpenAPI specifications, and ensure consistent response handling. These changes simplify the user interface and improve the overall user experience.)
       Object.keys(sec).forEach((scheme) => {
         const credential = props.authorizationCredentials?.[scheme]
         if (credential) {
           const securityScheme = props.spec.components?.securitySchemes?.[scheme]
           if (securityScheme) {
+<<<<<<< HEAD
             applySecurityScheme(scheme, credential, securityScheme, headers, [], cookies)
+=======
+            // Handle different security scheme types
+            switch (securityScheme.type) {
+              case 'http':
+                // HTTP authentication (basic, bearer, digest, etc.)
+                const httpScheme = securityScheme.scheme || 'bearer'
+                if (httpScheme.toLowerCase() === 'bearer') {
+                  // Bearer token authentication
+                  const bearerFormat = securityScheme.bearerFormat
+                  headers['Authorization'] = bearerFormat 
+                    ? `${bearerFormat} ${credential}`
+                    : `Bearer ${credential}`
+                } else if (httpScheme.toLowerCase() === 'basic') {
+                  // Basic authentication
+                  headers['Authorization'] = `Basic ${credential}`
+                } else {
+                  // Other HTTP schemes (digest, etc.)
+                  headers['Authorization'] = `${httpScheme} ${credential}`
+                }
+                break
+
+              case 'oauth2':
+              case 'openIdConnect':
+                // OAuth2 and OpenID Connect use Bearer token
+                headers['Authorization'] = `Bearer ${credential}`
+                break
+
+              case 'apiKey':
+                // API Key authentication
+                const name = securityScheme.name || scheme
+                const inLocation = securityScheme.in || 'header'
+                if (inLocation === 'header') {
+                  headers[name] = credential
+                } else if (inLocation === 'query') {
+                  // Query params are handled separately in buildRequestUrl
+                } else if (inLocation === 'cookie') {
+                  // Cookies are handled separately
+                }
+                break
+
+              default:
+                // Fallback: use scheme name as header name
+                headers[scheme] = credential
+                break
+            }
+          } else {
+            // If security scheme not found, try to infer from scheme name
+            if (scheme.toLowerCase().includes('bearer')) {
+              headers['Authorization'] = `Bearer ${credential}`
+            } else {
+              headers[scheme] = credential
+            }
+>>>>>>> cd8a85d (Refactor OperationView and TryItOut components for improved clarity and functionality; streamline server URL handling, enhance authorization header management according to OpenAPI specifications, and ensure consistent response handling. These changes simplify the user interface and improve the overall user experience.)
           }
         }
       })
@@ -838,12 +898,17 @@ const handleExecute = async () => {
     const isOctetStreamBody = requestBodyContentType?.includes('application/octet-stream') || 
                               requestBodyContentType?.includes('*/*')
 
+<<<<<<< HEAD
     // Get authorization headers and cookies
     const { headers: authHeaders, cookies } = getRequestHeaders()
+=======
+    // Get authorization headers first
+    const authHeaders = getRequestHeaders()
+>>>>>>> cd8a85d (Refactor OperationView and TryItOut components for improved clarity and functionality; streamline server URL handling, enhance authorization header management according to OpenAPI specifications, and ensure consistent response handling. These changes simplify the user interface and improve the overall user experience.)
     const headers: Record<string, string> = { ...authHeaders }
     let body: BodyInit | undefined
 
-    // Handle header parameters (always add them)
+    // Handle header parameters (always add them, may override auth headers)
     parameters.value.forEach((param) => {
       const resolvedParam = resolver.resolve(param)
       const value = paramValues.value[resolvedParam.name]
@@ -953,7 +1018,7 @@ const handleExecute = async () => {
       responseHeaders[key] = value
     })
 
-    response.value = {
+    const responsePayload = {
       status: res.status,
       statusText: res.statusText,
       headers: responseHeaders,
@@ -962,7 +1027,8 @@ const handleExecute = async () => {
       url,
     }
 
-    emit('response', response.value)
+    response.value = responsePayload
+    emit('response', responsePayload)
 
     toast({
       title: `Response: ${res.status}`,

@@ -360,8 +360,8 @@
           <!-- Server URL -->
           <Card class="p-6 space-y-4">
             <div class="flex items-center gap-2">
-              <Server :class="isExampleMode ? 'w-5 h-5 text-muted-foreground' : 'w-5 h-5 text-primary'" />
-              <h3 :class="isExampleMode ? 'text-lg font-semibold text-muted-foreground' : 'text-lg font-semibold text-foreground'">Server URL</h3>
+              <Server class="w-5 h-5 text-primary" />
+              <h3 class="text-lg font-semibold text-foreground">Server URL</h3>
             </div>
             <div class="space-y-2 border border-border rounded-md p-3 bg-muted/30">
               <div
@@ -375,12 +375,11 @@
                   :value="server.url"
                   :checked="selectedServer === server.url"
                   @change="handleServerSelect(server.url)"
-                  :disabled="isExampleMode"
-                  class="h-4 w-4 text-primary focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                  class="h-4 w-4 text-primary focus:ring-primary"
                 />
                 <label
                   :for="`server-${idx}`"
-                  :class="isExampleMode ? 'flex-1 text-sm cursor-not-allowed text-muted-foreground' : 'flex-1 text-sm cursor-pointer'"
+                  class="flex-1 text-sm cursor-pointer"
                 >
                   <div class="font-medium text-foreground">{{ server.url }}</div>
                   <div v-if="server.label.includes('(')" class="text-xs text-muted-foreground">
@@ -395,12 +394,11 @@
                   value="current-host"
                   :checked="selectedServer === 'current-host'"
                   @change="handleServerSelect('current-host')"
-                  :disabled="isExampleMode"
-                  class="h-4 w-4 text-primary focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                  class="h-4 w-4 text-primary focus:ring-primary"
                 />
                 <label
                   for="server-current-host"
-                  :class="isExampleMode ? 'flex-1 text-sm cursor-not-allowed font-medium text-muted-foreground' : 'flex-1 text-sm cursor-pointer font-medium text-foreground'"
+                  class="flex-1 text-sm cursor-pointer font-medium text-foreground"
                 >
                   Current Host ({{ getCurrentHostUrl() }})
                 </label>
@@ -412,12 +410,11 @@
                   value="custom"
                   :checked="selectedServer === 'custom'"
                   @change="handleServerSelect('custom')"
-                  :disabled="isExampleMode"
-                  class="h-4 w-4 text-primary focus:ring-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                  class="h-4 w-4 text-primary focus:ring-primary"
                 />
                 <label
                   for="server-custom"
-                  :class="isExampleMode ? 'flex-1 text-sm cursor-not-allowed font-medium text-muted-foreground' : 'flex-1 text-sm cursor-pointer font-medium text-foreground'"
+                  class="flex-1 text-sm cursor-pointer font-medium text-foreground"
                 >
                   Custom URL...
                 </label>
@@ -426,13 +423,14 @@
             <Input
               :model-value="getCurrentServerUrl()"
               @update:model-value="handleServerUrlUpdate"
-              :disabled="isExampleMode || (selectedServer !== 'custom' && selectedServer !== 'current-host' && availableServers.length > 0)"
+              :disabled="selectedServer !== 'custom' && selectedServer !== 'current-host' && availableServers.length > 0"
               placeholder="https://api.example.com"
             />
           </Card>
           <Separator />
 
           <!-- Params -->
+<<<<<<< HEAD
           <template v-if="!isExampleMode">
             <TryItOut 
               :method="method" 
@@ -459,6 +457,18 @@
               </div>
             </Card>
           </template>
+=======
+          <TryItOut 
+            :method="method" 
+            :path="path" 
+            :operation="operation" 
+            :spec="spec" 
+            :source-url="sourceUrl"
+            :server-url="getCurrentServerUrl()"
+            :authorization-credentials="getAuthorizationCredentials"
+            @response="handleResponse"
+          />
+>>>>>>> cd8a85d (Refactor OperationView and TryItOut components for improved clarity and functionality; streamline server URL handling, enhance authorization header management according to OpenAPI specifications, and ensure consistent response handling. These changes simplify the user interface and improve the overall user experience.)
           <Separator />
 
           <!-- Response -->
@@ -484,21 +494,21 @@
             </div>
 
             <template v-else>
-              <Card v-if="response.error" class="p-4 bg-destructive/10 border-destructive">
+              <Card v-if="response && response.error" class="p-4 bg-destructive/10 border-destructive">
                 <p class="text-sm font-semibold text-destructive">Error</p>
                 <p class="text-xs text-muted-foreground mt-1">
                   {{ response.message }}
                 </p>
               </Card>
 
-              <template v-else>
+              <template v-else-if="response && !response.error">
                 <div class="flex gap-2 flex-wrap">
                   <Badge
                     :variant="response.status >= 200 && response.status < 300 ? 'default' : 'destructive'"
                   >
-                    {{ response.status }} {{ response.statusText }}
+                    {{ response.status || 'N/A' }} {{ response.statusText || '' }}
                   </Badge>
-                  <Badge variant="outline">{{ response.duration }}ms</Badge>
+                  <Badge v-if="response.duration" variant="outline">{{ response.duration }}ms</Badge>
                 </div>
 
                 <Tabs :model-value="responseTab" @update:model-value="responseTab = $event" class="w-full">
@@ -510,9 +520,12 @@
                   <TabsContent value="body">
                     <ScrollArea class="h-[300px] w-full">
                       <pre class="bg-code-bg border border-code-border rounded-lg p-3 text-xs overflow-x-auto">
-                        {{ response.data !== undefined && response.data !== null 
-                          ? (typeof response.data === 'string' ? response.data : JSON.stringify(response.data, null, 2))
-                          : '(empty response)' }}
+                        <template v-if="response && response.data !== undefined && response.data !== null">
+                          {{ typeof response.data === 'string' ? response.data : JSON.stringify(response.data, null, 2) }}
+                        </template>
+                        <template v-else>
+                          (empty response)
+                        </template>
                       </pre>
                     </ScrollArea>
                   </TabsContent>
@@ -596,6 +609,7 @@ const isPrivate = computed(() => {
   return isOperationPrivate(props.operation, pathItem.value, props.spec)
 })
 
+<<<<<<< HEAD
 // Get effective security requirements for this operation
 const operationSecurity = computed(() => {
   return getOperationSecurity(props.operation, pathItem.value, props.spec)
@@ -605,6 +619,8 @@ const operationSecurity = computed(() => {
 const isExampleMode = computed(() => {
   return import.meta.env.VITE_EXAMPLE === 'true'
 })
+=======
+>>>>>>> cd8a85d (Refactor OperationView and TryItOut components for improved clarity and functionality; streamline server URL handling, enhance authorization header management according to OpenAPI specifications, and ensure consistent response handling. These changes simplify the user interface and improve the overall user experience.)
 
 // Server URL management
 const customServerUrl = ref('')
