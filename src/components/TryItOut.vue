@@ -57,15 +57,31 @@
             </p>
           </div>
           <!-- Regular input for non-file parameters -->
-          <Input v-else :model-value="paramValues[resolver.resolve(param).name] || ''"
-            @update:model-value="(val: string) => updateParamValue(resolver.resolve(param).name, val)"
-            :placeholder="`Enter ${resolver.resolve(param).name}`" />
+          <div v-else class="flex items-center gap-2">
+            <Input :model-value="paramValues[resolver.resolve(param).name] || ''"
+              @update:model-value="(val: string) => updateParamValue(resolver.resolve(param).name, val)"
+              :placeholder="`Enter ${resolver.resolve(param).name}`" class="flex-1" />
+            <label class="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer whitespace-nowrap">
+              <input type="checkbox" :checked="rememberParam[resolver.resolve(param).name] || false"
+                @change="toggleRememberParam(resolver.resolve(param).name)"
+                class="w-3.5 h-3.5 rounded border-border text-primary focus:ring-primary" />
+              Remember
+            </label>
+          </div>
         </div>
       </div>
 
       <!-- Request Body -->
       <div v-if="hasRequestBody" class="space-y-2">
-        <h4 class="text-sm font-semibold">Request Body</h4>
+        <div class="flex items-center justify-between">
+          <h4 class="text-sm font-semibold">Request Body</h4>
+          <label v-if="!isRequestBodyFile"
+            class="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
+            <input type="checkbox" :checked="rememberBody" @change="toggleRememberBody"
+              class="w-3.5 h-3.5 rounded border-border text-primary focus:ring-primary" />
+            Remember
+          </label>
+        </div>
         <!-- File upload for binary/multipart request body -->
         <div v-if="isRequestBodyFile" class="space-y-2">
           <input type="file" id="request-body-file" @change="handleRequestBodyFileChange"
@@ -150,6 +166,10 @@ const requestBody = ref('{}')
 const requestBodyFile = ref<File | null>(null)
 const commandFormat = ref<'edit' | 'curl' | 'wget'>('edit')
 const commandCopied = ref(false)
+
+// Remember checkboxes for parameters and body
+const rememberParam = ref<Record<string, boolean>>({})
+const rememberBody = ref(false)
 
 const parameters = computed(() => props.operation.parameters || [])
 const hasParameters = computed(() => parameters.value.length > 0)
@@ -294,8 +314,122 @@ const generateExampleFromSchema = (schema: any): any => {
   }
 }
 
+// Generate unique key for operation storage
+const getOperationStorageKey = (): string => {
+  const operationId = props.operation.operationId || ''
+  return `specula-params-${props.method}-${props.path}-${operationId}`
+}
+
+// Load saved parameter values from localStorage
+const loadSavedParamValues = () => {
+  try {
+    const key = getOperationStorageKey()
+    const saved = localStorage.getItem(`${key}-params`)
+    if (saved) {
+      const parsed = JSON.parse(saved)
+      paramValues.value = { ...paramValues.value, ...parsed }
+
+      // Load remember states
+      const rememberKey = localStorage.getItem(`${key}-remember`)
+      if (rememberKey) {
+        const rememberParsed = JSON.parse(rememberKey)
+        rememberParam.value = rememberParsed
+      }
+    }
+  } catch (error) {
+    console.error('Failed to load saved parameter values:', error)
+  }
+}
+
+// Save parameter value to localStorage if remember checkbox is checked
+const saveParamValue = (name: string, value: string) => {
+  if (rememberParam.value[name]) {
+    try {
+      const key = getOperationStorageKey()
+      const saved = localStorage.getItem(`${key}-params`) || '{}'
+      const parsed = JSON.parse(saved)
+      parsed[name] = value
+      localStorage.setItem(`${key}-params`, JSON.stringify(parsed))
+
+      // Save remember states
+      localStorage.setItem(`${key}-remember`, JSON.stringify(rememberParam.value))
+    } catch (error) {
+      console.error('Failed to save parameter value:', error)
+    }
+  }
+}
+
+// Load saved request body from localStorage
+const loadSavedRequestBody = () => {
+  try {
+    const key = getOperationStorageKey()
+    const saved = localStorage.getItem(`${key}-body`)
+    const rememberSaved = localStorage.getItem(`${key}-body-remember`)
+
+    if (saved && rememberSaved === 'true') {
+      requestBody.value = saved
+      rememberBody.value = true
+    }
+  } catch (error) {
+    console.error('Failed to load saved request body:', error)
+  }
+}
+
+// Save request body to localStorage if remember checkbox is checked
+const saveRequestBody = () => {
+  if (rememberBody.value && !isRequestBodyFile.value) {
+    try {
+      const key = getOperationStorageKey()
+      localStorage.setItem(`${key}-body`, requestBody.value)
+      localStorage.setItem(`${key}-body-remember`, 'true')
+    } catch (error) {
+      console.error('Failed to save request body:', error)
+    }
+  } else {
+    // Clear saved body if checkbox is unchecked
+    try {
+      const key = getOperationStorageKey()
+      localStorage.removeItem(`${key}-body`)
+      localStorage.removeItem(`${key}-body-remember`)
+    } catch (error) {
+      console.error('Failed to clear saved request body:', error)
+    }
+  }
+}
+
+// Toggle remember for parameter
+const toggleRememberParam = (name: string) => {
+  rememberParam.value = { ...rememberParam.value, [name]: !rememberParam.value[name] }
+
+  // Save remember states
+  try {
+    const key = getOperationStorageKey()
+    localStorage.setItem(`${key}-remember`, JSON.stringify(rememberParam.value))
+
+    // If unchecking, remove saved value
+    if (!rememberParam.value[name]) {
+      const saved = localStorage.getItem(`${key}-params`) || '{}'
+      const parsed = JSON.parse(saved)
+      delete parsed[name]
+      localStorage.setItem(`${key}-params`, JSON.stringify(parsed))
+    } else {
+      // If checking, save current value
+      saveParamValue(name, paramValues.value[name] || '')
+    }
+  } catch (error) {
+    console.error('Failed to toggle remember param:', error)
+  }
+}
+
+// Toggle remember for body
+const toggleRememberBody = () => {
+  rememberBody.value = !rememberBody.value
+  saveRequestBody()
+}
+
 const updateParamValue = (name: string, value: string) => {
   paramValues.value = { ...paramValues.value, [name]: value }
+  saveParamValue(name, value)
 }
 
 // Get parameter type from schema
@@ -434,6 +568,13 @@ const handleRequestBodyFileChange = (event: Event) => {
   }
 }
 
+// Watch requestBody changes and save if remember is checked
+watch(requestBody, () => {
+  if (!isRequestBodyFile.value) {
+    saveRequestBody()
+  }
+})
+
 // Initialize requestBody with example when component mounts or operation changes
 const initializeRequestBody = () => {
   if (hasRequestBody.value) {
@@ -448,11 +589,21 @@ watch(() => [props.operation, props.path, props.method], () => {
   // Clear file values when operation changes
   paramFileValues.value = {}
   requestBodyFile.value = null
+  // Clear remember states
+  rememberParam.value = {}
+  rememberBody.value = false
+  // Clear param values to start fresh
+  paramValues.value = {}
+  // Load saved values
+  loadSavedParamValues()
+  loadSavedRequestBody()
 }, { immediate: false, deep: false })
 
 // Initialize on mount
 onMounted(() => {
   initializeRequestBody()
+  loadSavedParamValues()
+  loadSavedRequestBody()
 })
 
 // Build request URL with path and query parameters
