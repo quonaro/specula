@@ -185,7 +185,7 @@ import { useSpecCacheStore, isHash } from '@/stores/specCache'
 import { useSpecHistoryStore } from '@/stores/specHistory'
 import { useLastWorkspaceStore } from '@/stores/lastWorkspace'
 import type { OpenAPISpec, TagNode, Operation } from '@/types/openapi'
-import { parseOpenAPISpec, parseMultipleSpecs, findNodeByPath, findNodeBySlug, toSlug, endpointPathToSlug, slugToEndpointPath } from '@/utils/openapi-parser'
+import { parseOpenAPISpec, parseMultipleSpecs, findNodeByPath, findNodeBySlug, toSlug, endpointPathToSlug, slugToEndpointPath, getOperationId, findOperationById } from '@/utils/openapi-parser'
 import { clearOperationCaches } from '@/utils/operation-cache'
 import { searchAllOperations, type SearchResult } from '@/utils/search'
 import { getMethodColorClass } from '@/utils/operation-cache'
@@ -372,112 +372,24 @@ const restoreStateFromRoute = () => {
 
   const path = route.path
 
-  // Handle standalone mode with simplified routing format: /:method/:path
+  // Handle standalone mode with simplified routing format: /:method/:operationId
   if (isStandaloneMode() && path !== '/' && !path.startsWith('/group/')) {
     const pathSegments = path.split('/').filter(s => s.length > 0)
 
-    // Check if path matches format /:method/:path
+    // Check if path matches format /:method/:operationId
     if (pathSegments.length >= 2) {
       const method = pathSegments[0]?.toUpperCase()
-      const endpointPathFromUrl = '/' + pathSegments.slice(1).join('/')
+      const operationIdFromUrl = pathSegments.slice(1).join('/')
 
       // Valid HTTP methods
       const validMethods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD', 'TRACE']
 
       if (method && validMethods.includes(method)) {
-        let foundPath: string | null = null
-        let foundSpec: OpenAPISpec | null = null
-        let foundSpecWithSource: SpecWithSource | null = null
-
-        // Get specId from query if specified
-        const specIdFromQuery = getSpecIdFromQuery()
-        let targetSpec: OpenAPISpec | null = null
-
-        if (specIdFromQuery) {
-          // Try to find spec by hash from cache
-          if (isHash(specIdFromQuery)) {
-            targetSpec = specCacheStore.getByHash(specIdFromQuery)
-          }
-
-          // If found, search only in that spec
-          if (targetSpec) {
-            for (const specWithSource of specStore.specs) {
-              if (specWithSource.spec === targetSpec) {
-                if (specWithSource.spec.paths[endpointPathFromUrl]) {
-                  const pathItem = specWithSource.spec.paths[endpointPathFromUrl]
-                  const operation = pathItem[method.toLowerCase() as keyof typeof pathItem]
-                  if (operation) {
-                    foundPath = endpointPathFromUrl
-                    foundSpec = specWithSource.spec
-                    foundSpecWithSource = specWithSource
-                    break
-                  }
-                }
-                break
-              }
-            }
-          }
-        }
-
-        // If not found with specId, or specId not specified, search in all specs
-        if (!foundPath) {
-          for (const specWithSource of specStore.specs) {
-            // Skip if we already tried this spec
-            if (targetSpec && specWithSource.spec === targetSpec) continue
-
-            if (specWithSource.spec.paths[endpointPathFromUrl]) {
-              const pathItem = specWithSource.spec.paths[endpointPathFromUrl]
-              const operation = pathItem[method.toLowerCase() as keyof typeof pathItem]
-              if (operation) {
-                foundPath = endpointPathFromUrl
-                foundSpec = specWithSource.spec
-                foundSpecWithSource = specWithSource
-                break
-              }
-            }
-          }
-        }
-
-        // If not found by exact path, try to match by path segments (handling path parameters)
-        if (!foundPath) {
-          for (const specWithSource of specStore.specs) {
-            // Skip if we already tried this spec
-            if (targetSpec && specWithSource.spec === targetSpec) continue
-
-            for (const [endpointPath, pathItem] of Object.entries(specWithSource.spec.paths)) {
-              const endpointSegments = endpointPath.split('/').filter(s => s.length > 0)
-              const urlSegments = pathSegments.slice(1) // Exclude method
-
-              // Try to match path segments
-              if (endpointSegments.length === urlSegments.length) {
-                let matches = true
-                for (let i = 0; i < endpointSegments.length; i++) {
-                  const endpointSeg = endpointSegments[i]
-                  const urlSeg = urlSegments[i]
-                  // Allow match if endpoint segment is a parameter {param} or :param, or if segments match exactly
-                  if (!endpointSeg.match(/^[{:]/) && endpointSeg !== urlSeg) {
-                    matches = false
-                    break
-                  }
-                }
-
-                if (matches) {
-                  const operation = pathItem[method.toLowerCase() as keyof typeof pathItem]
-                  if (operation) {
-                    foundPath = endpointPath
-                    foundSpec = specWithSource.spec
-                    foundSpecWithSource = specWithSource
-                    break
-                  }
-                }
-              }
-            }
-            if (foundPath) break
-          }
-        }
-
-        if (foundPath && foundSpec) {
-          selectedOperation.value = { method, path: foundPath }
+        // Try to find operation by operationId
+        const found = findOperationById(specStore.specs, operationIdFromUrl)
+        
+        if (found) {
+          selectedOperation.value = { method: found.method, path: found.path }
           selectedGroup.value = null
         } else {
           // Endpoint not found, redirect to home
@@ -508,133 +420,41 @@ const restoreStateFromRoute = () => {
       router.replace('/')
     }
   } else if (path.startsWith('/spec/') && path.includes('/endpoint/')) {
-    // New format: /spec/{specId}/endpoint/{method}/{path}
-    const specId = route.params.specId as string
+    // New format: /spec/{specId}/endpoint/{method}/{operationId}
     const method = (route.params.method as string).toUpperCase()
-    const endpointSlug = route.params.path as string
+    const operationIdFromUrl = route.params.path as string
 
-    // Convert slug back to endpoint path
-    const endpointPath = slugToEndpointPath(endpointSlug)
-
-    // Verify endpoint exists in any spec
-    let foundPath: string | null = null
-    let foundSpec: OpenAPISpec | null = null
-
-    for (const specWithSource of specStore.specs) {
-      if (specWithSource.spec.paths[endpointPath]) {
-        const pathItem = specWithSource.spec.paths[endpointPath]
-        const operation = pathItem[method.toLowerCase() as keyof typeof pathItem]
-        if (operation) {
-          foundPath = endpointPath
-          foundSpec = specWithSource.spec
-          break
-        }
-      }
-    }
-
-    if (foundPath && foundSpec) {
-      selectedOperation.value = { method, path: foundPath }
+    // Try to find operation by operationId
+    const found = findOperationById(specStore.specs, operationIdFromUrl)
+    
+    if (found && found.method === method) {
+      selectedOperation.value = { method: found.method, path: found.path }
       selectedGroup.value = null
     } else {
-      // Try to find by matching slug pattern
-      // Search through all paths in all specs to find matching endpoint
-      for (const specWithSource of specStore.specs) {
-        for (const [path, pathItem] of Object.entries(specWithSource.spec.paths)) {
-          const pathSlug = endpointPathToSlug(path)
-          if (pathSlug === endpointSlug) {
-            const op = pathItem[method.toLowerCase() as keyof typeof pathItem]
-            if (op) {
-              foundPath = path
-              foundSpec = specWithSource.spec
-              break
-            }
-          }
-        }
-        if (foundPath) break
-      }
-
-      if (foundPath && foundSpec) {
-        selectedOperation.value = { method, path: foundPath }
-        selectedGroup.value = null
-      } else {
-        // Endpoint not found, redirect to home
-        router.replace('/')
-      }
+      // Endpoint not found, redirect to home
+      router.replace('/')
     }
   } else if (path.startsWith('/endpoint/')) {
-    // Old format - redirect to new format if specId is available
+    // Format: /endpoint/{method}/{operationId}
     const method = (route.params.method as string).toUpperCase()
-    const endpointSlug = route.params.path as string
-    const endpointPath = slugToEndpointPath(endpointSlug)
+    const operationIdFromUrl = route.params.path as string
 
-    // Find the spec that contains this operation
-    let foundSpec: OpenAPISpec | null = null
-    for (const specWithSource of specStore.specs) {
-      if (specWithSource.spec.paths[endpointPath]) {
-        const pathItem = specWithSource.spec.paths[endpointPath]
-        const operation = pathItem[method.toLowerCase() as keyof typeof pathItem]
-        if (operation) {
-          foundSpec = specWithSource.spec
-          break
-        }
-      }
-    }
-
-    // Get specId from the found spec or fallback to query
-    const specId = foundSpec ? findSpecHash(foundSpec) : getSpecIdFromQuery()
-    if (specId) {
-      const query: Record<string, string | string[]> = { ...route.query }
-      router.replace({ path: `/spec/${specId}/endpoint/${method.toLowerCase()}/${endpointSlug}`, query })
-      return
-    }
-
-    // Continue with old format if no specId
-
-    // Verify endpoint exists in any spec
-    let foundPath: string | null = null
-    // foundSpec already declared above, reuse it
-    foundSpec = null
-
-    for (const specWithSource of specStore.specs) {
-      if (specWithSource.spec.paths[endpointPath]) {
-        const pathItem = specWithSource.spec.paths[endpointPath]
-        const operation = pathItem[method.toLowerCase() as keyof typeof pathItem]
-        if (operation) {
-          foundPath = endpointPath
-          foundSpec = specWithSource.spec
-          break
-        }
-      }
-    }
-
-    if (foundPath && foundSpec) {
-      selectedOperation.value = { method, path: foundPath }
+    // Try to find operation by operationId
+    const found = findOperationById(specStore.specs, operationIdFromUrl)
+    
+    if (found && found.method === method) {
+      selectedOperation.value = { method: found.method, path: found.path }
       selectedGroup.value = null
+      
+      // Get specId from the found spec or fallback to query
+      const specId = findSpecHash(found.spec) || getSpecIdFromQuery()
+      if (specId) {
+        const query: Record<string, string | string[]> = { ...route.query }
+        router.replace({ path: `/spec/${specId}/endpoint/${method.toLowerCase()}/${operationIdFromUrl}`, query })
+      }
     } else {
-      // Try to find by matching slug pattern
-      // Search through all paths in all specs to find matching endpoint
-      for (const specWithSource of specStore.specs) {
-        for (const [path, pathItem] of Object.entries(specWithSource.spec.paths)) {
-          const pathSlug = endpointPathToSlug(path)
-          if (pathSlug === endpointSlug) {
-            const op = pathItem[method.toLowerCase() as keyof typeof pathItem]
-            if (op) {
-              foundPath = path
-              foundSpec = specWithSource.spec
-              break
-            }
-          }
-        }
-        if (foundPath) break
-      }
-
-      if (foundPath && foundSpec) {
-        selectedOperation.value = { method, path: foundPath }
-        selectedGroup.value = null
-      } else {
-        // Endpoint not found, redirect to home
-        router.replace('/')
-      }
+      // Endpoint not found, redirect to home
+      router.replace('/')
     }
   } else if (path === '/') {
     // Root path - show empty state (no operation selected)
@@ -973,10 +793,12 @@ const handleGlobalSearchSelect = (result: SearchResult) => {
   const spec = specStore.specs[result.specIndex]
   if (!spec) return
 
-  // In standalone mode, use simplified format: /:method/:path
+  // Get operationId from the operation
+  const operationId = getOperationId(result.operation, result.method, result.path)
+
+  // In standalone mode, use simplified format: /:method/:operationId
   if (isStandaloneMode()) {
-    const endpointPath = result.path.startsWith('/') ? result.path.slice(1) : result.path
-    const newPath = `/${result.method.toUpperCase()}/${endpointPath}`
+    const newPath = `/${result.method.toUpperCase()}/${operationId}`
 
     // Add spec to query if multiple specs exist
     const query: Record<string, string | string[]> = {}
@@ -989,13 +811,17 @@ const handleGlobalSearchSelect = (result: SearchResult) => {
 
     router.push({ path: newPath, query })
   } else {
-    // Non-standalone mode: use original format with slug
-    const slug = endpointPathToSlug(result.path)
-    router.push({
-      path: specStore.specs.length === 1
-        ? `/endpoint/${result.method.toLowerCase()}/${slug}`
-        : `/spec/${result.specIndex}/endpoint/${result.method.toLowerCase()}/${slug}`
-    })
+    // Non-standalone mode: use operationId format
+    const specId = findSpecHash(spec.spec)
+    if (specId) {
+      router.push({
+        path: `/spec/${specId}/endpoint/${result.method.toLowerCase()}/${operationId}`
+      })
+    } else {
+      router.push({
+        path: `/endpoint/${result.method.toLowerCase()}/${operationId}`
+      })
+    }
   }
 
   // Close search results
@@ -1019,59 +845,76 @@ const handleOperationSelect = (method: string, path: string) => {
   // Preserve spec query parameters when navigating
   const query: Record<string, string | string[]> = { ...route.query }
 
-  // In standalone mode, use simplified format: /:method/:path
-  if (isStandaloneMode()) {
-    // Find the spec that contains this operation
-    let foundSpecWithSource: SpecWithSource | null = null
-    for (const specWithSource of specStore.specs) {
-      const pathItem = specWithSource.spec.paths[path]
-      if (pathItem) {
-        const operation = pathItem[method.toLowerCase() as keyof typeof pathItem]
-        if (operation) {
-          foundSpecWithSource = specWithSource
-          break
-        }
+  // Find the operation to get its operationId
+  let operation: Operation | null = null
+  let foundSpecWithSource: SpecWithSource | null = null
+  
+  for (const specWithSource of specStore.specs) {
+    const pathItem = specWithSource.spec.paths[path]
+    if (pathItem) {
+      const op = pathItem[method.toLowerCase() as keyof typeof pathItem]
+      if (op) {
+        operation = op
+        foundSpecWithSource = specWithSource
+        break
       }
     }
+  }
 
-    // If multiple specs have the same endpoint, use spec from query if available
-    if (!foundSpecWithSource && specStore.specs.length > 0) {
-      const specIdFromQuery = getSpecIdFromQuery()
-      if (specIdFromQuery && isHash(specIdFromQuery)) {
-        const targetSpec = specCacheStore.getByHash(specIdFromQuery)
-        if (targetSpec) {
-          for (const specWithSource of specStore.specs) {
-            if (specWithSource.spec === targetSpec) {
-              foundSpecWithSource = specWithSource
-              break
+  // If not found, try to find by spec from query
+  if (!operation && specStore.specs.length > 0) {
+    const specIdFromQuery = getSpecIdFromQuery()
+    if (specIdFromQuery && isHash(specIdFromQuery)) {
+      const targetSpec = specCacheStore.getByHash(specIdFromQuery)
+      if (targetSpec) {
+        for (const specWithSource of specStore.specs) {
+          if (specWithSource.spec === targetSpec) {
+            const pathItem = specWithSource.spec.paths[path]
+            if (pathItem) {
+              const op = pathItem[method.toLowerCase() as keyof typeof pathItem]
+              if (op) {
+                operation = op
+                foundSpecWithSource = specWithSource
+                break
+              }
             }
           }
         }
       }
     }
+  }
 
-    // If still not found, use first spec that has this endpoint
-    if (!foundSpecWithSource) {
-      for (const specWithSource of specStore.specs) {
-        const pathItem = specWithSource.spec.paths[path]
-        if (pathItem) {
-          const operation = pathItem[method.toLowerCase() as keyof typeof pathItem]
-          if (operation) {
-            foundSpecWithSource = specWithSource
-            break
-          }
+  // If still not found, use first spec that has this endpoint
+  if (!operation) {
+    for (const specWithSource of specStore.specs) {
+      const pathItem = specWithSource.spec.paths[path]
+      if (pathItem) {
+        const op = pathItem[method.toLowerCase() as keyof typeof pathItem]
+        if (op) {
+          operation = op
+          foundSpecWithSource = specWithSource
+          break
         }
       }
     }
+  }
 
+  if (!operation) {
+    console.error('Operation not found:', method, path)
+    return
+  }
+
+  // Get operationId (or fallback)
+  const operationId = getOperationId(operation, method, path)
+
+  // In standalone mode, use simplified format: /:method/:operationId
+  if (isStandaloneMode()) {
     // In standalone mode, only add spec to query if:
     // 1. Multiple specs exist (to identify which one)
     // 2. Spec was loaded from URL parameter (preserve it)
-    // Don't add spec parameter for normal navigation to avoid backend 404 issues
     const hasSpecInQuery = route.query.spec
     if (foundSpecWithSource && specStore.specs.length > 1 && hasSpecInQuery) {
       // Preserve existing spec query if multiple specs
-      // This helps when user navigates between endpoints with same path in different specs
     } else if (foundSpecWithSource && specStore.specs.length > 1) {
       // Only add spec parameter if multiple specs and not already in query
       const specId = findSpecHash(foundSpecWithSource.spec)
@@ -1086,28 +929,17 @@ const handleOperationSelect = (method: string, path: string) => {
       }
     }
 
-    // Build path: /:method/:path (remove leading slash from path if present)
-    const endpointPath = path.startsWith('/') ? path.slice(1) : path
-    const newPath = `/${method.toUpperCase()}/${endpointPath}`
+    // Build path: /:method/:operationId
+    const newPath = `/${method.toUpperCase()}/${operationId}`
     router.push({ path: newPath, query })
     return
   }
 
-  // Non-standalone mode: use original format with slug
-  const slug = endpointPathToSlug(path)
-
+  // Non-standalone mode: use operationId format
   // Find the spec that contains this operation to get the correct specId
   let specId: string | null = null
-  for (const specWithSource of specStore.specs) {
-    const pathItem = specWithSource.spec.paths[path]
-    if (pathItem) {
-      const operation = pathItem[method.toLowerCase() as keyof typeof pathItem]
-      if (operation) {
-        // Found the spec for this operation
-        specId = findSpecHash(specWithSource.spec)
-        break
-      }
-    }
+  if (foundSpecWithSource) {
+    specId = findSpecHash(foundSpecWithSource.spec)
   }
 
   // Fallback to query if not found
@@ -1116,9 +948,9 @@ const handleOperationSelect = (method: string, path: string) => {
   }
 
   if (specId) {
-    router.push({ path: `/spec/${specId}/endpoint/${methodLower}/${slug}`, query })
+    router.push({ path: `/spec/${specId}/endpoint/${methodLower}/${operationId}`, query })
   } else {
-    router.push({ path: `/endpoint/${methodLower}/${slug}`, query })
+    router.push({ path: `/endpoint/${methodLower}/${operationId}`, query })
   }
 }
 

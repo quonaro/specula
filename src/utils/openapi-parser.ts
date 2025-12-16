@@ -54,12 +54,23 @@ export function parseOpenAPISpec(spec: OpenAPISpec): TagNode {
             currentNode = currentNode.children.get(part)!;
             
             // Add operation to the deepest node only
+            // Check for duplicates to avoid adding the same operation multiple times
             if (index === parts.length - 1) {
-              currentNode.operations.push({
-                method: method.toUpperCase(),
-                path,
-                operation,
-              });
+              // Check if this operation already exists in this node
+              const operationId = operation.operationId || `${method.toUpperCase()}_${path}`;
+              const alreadyExists = currentNode.operations.some(
+                op => op.method === method.toUpperCase() && 
+                      op.path === path &&
+                      (op.operation.operationId || `${op.method}_${op.path}`) === operationId
+              );
+              
+              if (!alreadyExists) {
+                currentNode.operations.push({
+                  method: method.toUpperCase(),
+                  path,
+                  operation,
+                });
+              }
             }
           });
         });
@@ -191,6 +202,52 @@ export function slugToEndpointPath(slug: string): string {
     })
     .join('/')
   return path
+}
+
+/**
+ * Get operation identifier - uses operationId if available, otherwise falls back to method_path format
+ */
+export function getOperationId(operation: Operation, method: string, path: string): string {
+  if (operation.operationId) {
+    return operation.operationId
+  }
+  // Fallback: use method_path format, sanitized for URL
+  const sanitizedPath = path
+    .replace(/^\//, '')
+    .replace(/\//g, '_')
+    .replace(/{([^}]+)}/g, '$1')
+    .replace(/[^a-zA-Z0-9_]/g, '_')
+  return `${method.toLowerCase()}_${sanitizedPath}`
+}
+
+/**
+ * Find operation by operationId in specs
+ */
+export function findOperationById(
+  specs: Array<{ spec: OpenAPISpec; sourceUrl?: string; title: string }>,
+  operationId: string
+): { method: string; path: string; operation: Operation; spec: OpenAPISpec; sourceUrl?: string } | null {
+  for (const specWithSource of specs) {
+    for (const [path, pathItem] of Object.entries(specWithSource.spec.paths)) {
+      const methods = ['get', 'post', 'put', 'delete', 'patch', 'options', 'head', 'trace'] as const
+      for (const method of methods) {
+        const operation = pathItem[method]
+        if (operation) {
+          const opId = getOperationId(operation, method.toUpperCase(), path)
+          if (opId === operationId) {
+            return {
+              method: method.toUpperCase(),
+              path,
+              operation,
+              spec: specWithSource.spec,
+              sourceUrl: specWithSource.sourceUrl,
+            }
+          }
+        }
+      }
+    }
+  }
+  return null
 }
 
 // Parse multiple specs into a single tree structure where each spec becomes a top-level group
