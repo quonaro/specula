@@ -98,7 +98,7 @@
                 <Badge v-if="resolvedBody.required" variant="destructive" class="text-[10px] px-1.5 py-0">
                   required
                 </Badge>
-                <div v-for="[contentType, mediaType] in Object.entries(resolvedBody.content || {})" :key="contentType"
+                <div v-for="[contentType, mediaType] in getMediaTypeEntries(resolvedBody?.content)" :key="contentType"
                   class="space-y-3">
                   <div class="text-sm font-medium text-foreground">
                     Content-Type: <code>{{ contentType }}</code>
@@ -119,7 +119,7 @@
                   </div>
                   <div v-if="mediaType?.encoding && Object.keys(mediaType.encoding).length > 0" class="space-y-2">
                     <h4 class="text-sm font-semibold">Encoding:</h4>
-                    <div v-for="[fieldName, encoding] in Object.entries(mediaType.encoding)" :key="fieldName"
+                    <div v-for="[fieldName, encoding] in getEncodingEntries(mediaType.encoding)" :key="fieldName"
                       class="border border-border rounded p-2">
                       <code class="text-xs font-semibold">{{ fieldName }}</code>
                       <div v-if="encoding.contentType" class="text-xs text-muted-foreground">
@@ -163,7 +163,7 @@
                   </div>
 
                   <div v-if="resolver.resolve(response).content"
-                    v-for="[contentType, mediaType] in Object.entries(resolver.resolve(response).content || {})"
+                    v-for="[contentType, mediaType] in getMediaTypeEntries(resolver.resolve(response).content)"
                     :key="contentType" class="space-y-2">
                     <div class="flex items-center justify-between">
                       <div class="text-sm font-medium text-foreground">
@@ -233,7 +233,7 @@
                     </div>
                     <div v-if="mediaType?.examples && Object.keys(mediaType.examples).length > 0" class="space-y-2">
                       <h4 class="text-sm font-semibold">Examples:</h4>
-                      <div v-for="[exName, ex] in Object.entries(mediaType.examples)" :key="exName">
+                      <div v-for="[exName, ex] in Object.entries(mediaType.examples || {})" :key="exName">
                         <Badge variant="secondary" class="mb-1">{{ exName }}</Badge>
                         <p v-if="resolver.resolve(ex).description" class="text-sm text-muted-foreground">
                           {{ resolver.resolve(ex).description }}
@@ -364,7 +364,7 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted, shallowRef } from 'vue'
 import { Copy, Check, Key, Server, FileText, Settings } from 'lucide-vue-next'
-import type { Operation, OpenAPISpec, PathItem } from '@/types/openapi'
+import type { Operation, OpenAPISpec, PathItem, MediaType, Encoding } from '@/types/openapi'
 import { RefResolver } from '@/utils/ref-resolver'
 import { isOperationPrivate, getOperationSecurity } from '@/utils/openapi-parser'
 import { getMethodColorClass } from '@/utils/operation-cache'
@@ -440,6 +440,17 @@ const authorizationStore = useAuthorizationStore()
 // Local authorization credentials (not saved globally)
 const localAuthorizationCredentials = ref<Record<string, string>>({})
 
+
+// Helper functions for type-safe Object.entries
+const getMediaTypeEntries = (content: Record<string, any> | undefined): Array<[string, MediaType]> => {
+  if (!content) return []
+  return Object.entries(content) as Array<[string, MediaType]>
+}
+
+const getEncodingEntries = (encoding: Record<string, any> | undefined): Array<[string, Encoding]> => {
+  if (!encoding) return []
+  return Object.entries(encoding) as Array<[string, Encoding]>
+}
 
 // Initialize local credentials from global store
 const initializeLocalCredentials = () => {

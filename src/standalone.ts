@@ -7,8 +7,6 @@ import './index.css'
 import App from './App.vue'
 import { useThemeStore } from './stores/theme'
 import { useSettingsStore } from './stores/settings'
-import { useSpecStore } from './stores/spec'
-import type { OpenAPISpec } from './types/openapi'
 // Import logo - will be replaced with Base64 string by vite-plugin-logo-base64 in standalone build
 import logoUrl from '/logo.png'
 
@@ -28,6 +26,28 @@ export interface SpeculaInstance {
 }
 
 let instanceCount = 0
+
+/**
+ * Update URL query parameter `spec` without reloading the page.
+ * This allows the existing URL-based loading logic (watchers in Index.vue)
+ * to be the single source of truth for fetching OpenAPI specs.
+ */
+async function updateSpecQuery(urls: string | string[]): Promise<void> {
+  if (typeof window === 'undefined') return
+
+  const values = Array.isArray(urls) ? urls : [urls]
+  const currentUrl = new URL(window.location.href)
+  const params = currentUrl.searchParams
+
+  // Replace existing spec parameters with the new list
+  params.delete('spec')
+  for (const v of values) {
+    params.append('spec', v)
+  }
+
+  currentUrl.search = params.toString()
+  window.history.replaceState(null, '', currentUrl.toString())
+}
 
 /**
  * Initialize Specula in a container
@@ -55,6 +75,12 @@ export async function init(config: SpeculaConfig): Promise<SpeculaInstance> {
   // Store base path globally for use in components
   ;(window as any).__SPECULA_BASE_PATH__ = basePath
 
+  // If initial OpenAPI URL is provided, reflect it in the URL as ?spec=...
+  // so that the existing URL-based loader in Index.vue fetches the spec.
+  if (config.openapi) {
+    await updateSpecQuery(config.openapi)
+  }
+
   // Set favicon from Base64 logo
   if (typeof document !== 'undefined') {
     let favicon = document.querySelector('link[rel="icon"]') as HTMLLinkElement
@@ -71,11 +97,11 @@ export async function init(config: SpeculaConfig): Promise<SpeculaInstance> {
   const container = typeof config.container === 'string' 
     ? document.querySelector(config.container) as HTMLElement
     : config.container
-
+  
   if (!container) {
     throw new Error(`Container not found: ${config.container}`)
   }
-
+  
   // Create app container
   const appContainer = document.createElement('div')
   appContainer.id = containerId
@@ -125,48 +151,13 @@ export async function init(config: SpeculaConfig): Promise<SpeculaInstance> {
     rtl: false
   })
 
-  // Load spec BEFORE mounting if provided
-  const specStore = useSpecStore()
-  
+  // New implementation of loadSpec: just update ?spec=... in URL.
+  // Actual fetching is handled by watchers inside the app (Index.vue).
   const loadSpec = async (url: string | string[]) => {
-    const urls = Array.isArray(url) ? url : [url]
-    const loadedSpecs = []
-
-    for (const specUrl of urls) {
-      try {
-        const response = await fetch(specUrl)
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
-        }
-        const spec: OpenAPISpec = await response.json()
-        const title = spec.info?.title || 'Untitled Specification'
-        
-        loadedSpecs.push({
-          spec,
-          sourceUrl: specUrl,
-          title,
-        })
-      } catch (error: any) {
-        console.error(`Failed to load spec from ${specUrl}:`, error)
-        throw error
-      }
-    }
-
-    if (loadedSpecs.length > 0) {
-      specStore.setSpecs(loadedSpecs)
-    }
+    await updateSpecQuery(url)
   }
 
-  // Load initial spec if provided (before mounting to avoid selection page)
-  if (config.openapi) {
-    try {
-      await loadSpec(config.openapi)
-    } catch (error) {
-      console.error('Failed to load initial OpenAPI spec:', error)
-    }
-  }
-
-  // Mount app after spec is loaded (if provided)
+  // Mount app; specs will be loaded by URL-based logic
   app.mount(`#${containerId}`)
 
   const destroy = () => {
@@ -184,4 +175,7 @@ export async function init(config: SpeculaConfig): Promise<SpeculaInstance> {
 if (typeof window !== 'undefined') {
   (window as any).Specula = { init }
 }
+
+// End of File
+
 
