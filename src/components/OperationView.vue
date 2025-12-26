@@ -8,6 +8,9 @@
       </Button>
     </div>
 
+    <!-- Horizontal separator line -->
+          <Separator />
+
     <!-- Column Layout -->
     <ColumnLayout
       :columns-count="columnsCount"
@@ -34,8 +37,10 @@
       v-model="showSettingsDialog"
       :columns-count="columnsCount"
       :column-widths="columnWidths"
+      :cards="cards"
+      :available-card-types="getAvailableCardTypes"
       @update:columns-count="handleColumnsCountUpdate"
-      @update:column-widths="handleColumnWidthsUpdate"
+      @update:cards="handleCardsUpdate"
       @reset="resetLayout"
     />
   </div>
@@ -49,6 +54,7 @@ import { RefResolver } from '@/utils/ref-resolver'
 import { getOperationSecurity } from '@/utils/openapi-parser'
 import { useAuthorizationStore } from '@/stores/authorization'
 import Button from './ui/Button.vue'
+import Separator from './ui/Separator.vue'
 import OperationHeader from './operation/OperationHeader.vue'
 import ColumnLayout, { type CardData } from './operation/ColumnLayout.vue'
 import ColumnSettingsDialog from './operation/ColumnSettingsDialog.vue'
@@ -119,7 +125,7 @@ const initializeServer = () => {
       // Invalid URL
     }
   }
-  selectedServer.value = 'current-host'
+      selectedServer.value = 'current-host'
 }
 
 // Get current host URL
@@ -193,6 +199,55 @@ const handleResponse = (responseData: any) => {
 // Layout state
 const STORAGE_KEY = 'operationViewLayout'
 const showSettingsDialog = ref(false)
+
+// Get available card types based on operation
+const getAvailableCardTypes = computed(() => {
+  const types: Array<{ type: CardData['type']; label: string; available: boolean }> = []
+  
+  types.push({
+    type: 'parameters',
+    label: 'Parameters',
+    available: !!(props.operation.parameters && props.operation.parameters.length > 0)
+  })
+  
+  types.push({
+    type: 'requestBody',
+    label: 'Request Body',
+    available: !!props.operation.requestBody
+  })
+  
+  types.push({
+    type: 'responses',
+    label: 'Responses',
+    available: !!props.operation.responses
+  })
+  
+  types.push({
+    type: 'authorization',
+    label: 'Authorization',
+    available: !!(operationSecurity.value && operationSecurity.value.length > 0)
+  })
+  
+  types.push({
+    type: 'serverUrl',
+    label: 'Server URL',
+    available: true
+  })
+  
+  types.push({
+    type: 'tryItOut',
+    label: 'Try It Out',
+    available: true
+  })
+  
+  types.push({
+    type: 'response',
+    label: 'Response',
+    available: true
+  })
+  
+  return types
+})
 
 // Default layout configuration
 const getDefaultLayout = (): { columnsCount: number; columnWidths: number[]; cards: CardData[] } => {
@@ -296,7 +351,7 @@ const handleResizeEnd = (widths: number[]) => {
 
 const handleColumnsCountUpdate = (count: number) => {
   columnsCount.value = count
-  // Adjust widths
+  // Adjust widths - automatically equalize
   columnWidths.value = Array(count).fill(100 / count)
   // Adjust card column indices if needed
   cards.value = cards.value.map(card => ({

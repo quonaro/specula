@@ -38,7 +38,8 @@
             <div class="relative flex-1 global-search-container">
               <Search class="absolute left-2.5 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input v-model="globalSearchQuery" placeholder="Search all endpoints..." class="pl-8 h-9 text-sm"
-                autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-form-type="other" type="search"
+                autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" data-dashlane-ignore="true" data-form-type="other" type="search"
+                name="search-endpoints" id="global-search-input"
                 @focus="showGlobalSearchResults = true" @keydown.escape="showGlobalSearchResults = false" />
               <div v-if="showGlobalSearchResults && globalSearchResults.length > 0"
                 class="absolute top-full left-0 right-0 mt-1 bg-card border border-border rounded-md shadow-lg z-50 max-h-96 overflow-y-auto"

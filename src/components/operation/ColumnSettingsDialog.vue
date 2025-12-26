@@ -17,32 +17,26 @@
         </div>
       </div>
 
-      <!-- Column Widths (when more than 1 column) -->
-      <div v-if="columnsCount > 1" class="space-y-2">
-        <label class="text-sm font-medium text-foreground">Column Widths (%)</label>
-        <div class="space-y-2">
-          <div v-for="(width, idx) in columnWidths" :key="idx" class="flex items-center gap-2">
-            <label class="text-xs text-muted-foreground w-16">Column {{ idx + 1 }}:</label>
-            <Input
-              :model-value="width.toFixed(1)"
-              @update:model-value="(val) => updateColumnWidth(idx, parseFloat(val) || 0)"
-              type="number"
-              min="10"
-              max="100"
-              step="0.1"
-              class="flex-1"
-            />
-            <span class="text-xs text-muted-foreground">%</span>
+      <!-- Visible Cards -->
+      <div class="space-y-2">
+        <label class="text-sm font-medium text-foreground">Visible Cards</label>
+        <div class="space-y-2 border border-border rounded-lg p-3 max-h-[400px] overflow-y-auto">
+          <div
+            v-for="cardType in availableCardTypes"
+            :key="cardType.type"
+            class="flex items-center gap-2 p-2 rounded transition-colors"
+            :class="cardType.available ? 'hover:bg-muted/50 cursor-pointer' : 'opacity-50 cursor-not-allowed'"
+          >
+            <Checkbox
+              :model-value="isCardVisible(cardType.type)"
+              :disabled="!cardType.available"
+              @update:model-value="(checked) => toggleCardVisibility(cardType.type, checked)"
+            >
+              <span class="text-sm text-foreground">{{ cardType.label }}</span>
+              <span v-if="!cardType.available" class="text-xs text-muted-foreground ml-1">(not available)</span>
+            </Checkbox>
           </div>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          @click="equalizeColumnWidths"
-          class="w-full"
-        >
-          Equalize All Columns
-        </Button>
       </div>
 
       <!-- Reset to Default -->
@@ -68,14 +62,23 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import type { CardData } from './ColumnLayout.vue'
 import Dialog from '../ui/Dialog.vue'
 import Button from '../ui/Button.vue'
-import Input from '../ui/Input.vue'
+import Checkbox from '../ui/Checkbox.vue'
+
+interface CardTypeInfo {
+  type: CardData['type']
+  label: string
+  available: boolean
+}
 
 interface Props {
   modelValue: boolean
   columnsCount: number
   columnWidths: number[]
+  cards: CardData[]
+  availableCardTypes: CardTypeInfo[]
 }
 
 const props = defineProps<Props>()
@@ -83,7 +86,7 @@ const props = defineProps<Props>()
 const emit = defineEmits<{
   'update:modelValue': [value: boolean]
   'update:columnsCount': [count: number]
-  'update:columnWidths': [widths: number[]]
+  'update:cards': [cards: CardData[]]
   'reset': []
 }>()
 
@@ -93,50 +96,51 @@ const updateModelValue = (value: boolean) => {
 
 const updateColumnsCount = (count: number) => {
   emit('update:columnsCount', count)
-  // Auto-adjust widths when changing column count
-  const newWidths = Array(count).fill(100 / count)
-  emit('update:columnWidths', newWidths)
+  // Auto-adjust card column indices when changing column count
+  const updatedCards = props.cards.map(card => ({
+    ...card,
+    columnIndex: Math.min(card.columnIndex, count - 1)
+  }))
+  emit('update:cards', updatedCards)
 }
 
-const updateColumnWidth = (index: number, width: number) => {
-  if (width < 10 || width > 100) return
+const isCardVisible = (cardType: CardData['type']): boolean => {
+  return props.cards.some(card => card.type === cardType)
+}
+
+const toggleCardVisibility = (cardType: CardData['type'], visible: boolean) => {
+  // Check if card type is available
+  const cardInfo = props.availableCardTypes.find(ct => ct.type === cardType)
+  if (!cardInfo || !cardInfo.available) return
   
-  const newWidths = [...props.columnWidths]
-  const oldWidth = newWidths[index]
-  const delta = width - oldWidth
-  
-  // Distribute delta to other columns proportionally
-  const otherColumns = newWidths.filter((_, i) => i !== index)
-  const totalOtherWidth = otherColumns.reduce((sum, w) => sum + w, 0)
-  
-  if (totalOtherWidth > 0 && otherColumns.length > 0) {
-    otherColumns.forEach((w, i) => {
-      const originalIndex = newWidths.findIndex((_, idx) => idx !== index && idx > i)
-      if (originalIndex !== -1) {
-        const proportion = w / totalOtherWidth
-        newWidths[originalIndex] = Math.max(10, newWidths[originalIndex] - (delta * proportion))
+  if (visible) {
+    // Add card if it doesn't exist
+    if (!isCardVisible(cardType)) {
+      const newCards = [...props.cards]
+      // Find max id to generate new one
+      const maxId = newCards.reduce((max, card) => {
+        const num = parseInt(card.id.replace('card-', '') || '0')
+        return Math.max(max, num)
+      }, -1)
+      
+      // Determine default column index based on card type
+      let defaultColumn = 0
+      if (cardType === 'authorization' || cardType === 'serverUrl' || cardType === 'tryItOut' || cardType === 'response') {
+        defaultColumn = Math.min(1, props.columnsCount - 1)
       }
-    })
+      
+      newCards.push({
+        id: `card-${maxId + 1}`,
+        type: cardType,
+        columnIndex: defaultColumn
+      })
+      emit('update:cards', newCards)
+    }
+  } else {
+    // Remove card if it exists
+    const newCards = props.cards.filter(card => card.type !== cardType)
+    emit('update:cards', newCards)
   }
-  
-  newWidths[index] = width
-  
-  // Normalize to ensure total is 100%
-  const total = newWidths.reduce((sum, w) => sum + w, 0)
-  if (total !== 100) {
-    const factor = 100 / total
-    newWidths.forEach((w, i) => {
-      newWidths[i] = w * factor
-    })
-  }
-  
-  emit('update:columnWidths', newWidths)
-}
-
-const equalizeColumnWidths = () => {
-  const equalWidth = 100 / props.columnsCount
-  const newWidths = Array(props.columnsCount).fill(equalWidth)
-  emit('update:columnWidths', newWidths)
 }
 
 const resetToDefault = () => {

@@ -11,28 +11,43 @@
         @resize="(delta) => handleColumnResize(idx, delta)"
       >
         <ScrollArea class="h-full">
-          <draggable
-            v-model="column.cards"
-            :group="{ name: 'cards', pull: true, put: true }"
-            :animation="200"
-            ghost-class="opacity-50"
-            drag-class="cursor-grabbing"
-            handle=".drag-handle"
-            class="h-full p-4 space-y-4"
-            item-key="id"
-            @end="handleDragEnd"
-          >
-            <template #item="{ element: card }">
-              <div class="drag-handle cursor-grab active:cursor-grabbing">
-                <component
-                  :is="getCardComponent(card.type)"
-                  v-bind="getCardProps(card.type)"
-                  :key="card.id"
-                  @response="handleCardResponse"
-                />
-              </div>
-            </template>
-          </draggable>
+          <div>
+            <draggable
+              v-model="column.cards"
+              :group="{ name: 'cards', pull: true, put: true }"
+              :animation="200"
+              ghost-class="opacity-50"
+              drag-class="cursor-grabbing"
+              handle=".drag-handle"
+              item-key="id"
+              @end="handleDragEnd"
+            >
+              <template #item="{ element: card }">
+                <div class="w-full">
+                  <div 
+                    class="drag-handle cursor-grab active:cursor-grabbing px-4"
+                    :class="{ 'pt-4': getCardIndex(column, card.id) === 0 }"
+                  >
+                    <component
+                      :is="getCardComponent(card.type)"
+                      v-bind="getCardProps(card.type)"
+                      @response="handleCardResponse"
+                    />
+                  </div>
+                  <div 
+                    v-if="getCardIndex(column, card.id) < column.cards.length - 1"
+                    class="py-4"
+                  >
+                    <Separator class="w-full" />
+                  </div>
+                  <div 
+                    v-if="getCardIndex(column, card.id) === column.cards.length - 1"
+                    class="pb-4"
+                  />
+                </div>
+              </template>
+            </draggable>
+          </div>
         </ScrollArea>
       </ResizableColumn>
     </div>
@@ -45,6 +60,7 @@ import draggable from 'vuedraggable'
 import type { Operation, OpenAPISpec, PathItem } from '@/types/openapi'
 import ResizableColumn from './ResizableColumn.vue'
 import ScrollArea from '../ui/ScrollArea.vue'
+import Separator from '../ui/Separator.vue'
 import ParametersCard from './ParametersCard.vue'
 import RequestBodyCard from './RequestBodyCard.vue'
 import ResponsesCard from './ResponsesCard.vue'
@@ -261,6 +277,11 @@ onMounted(() => {
 onUnmounted(() => {
   document.removeEventListener('mouseup', handleResizeEnd)
 })
+
+// Helper to get card index in column
+const getCardIndex = (column: Column, cardId: string): number => {
+  return column.cards.findIndex(c => c.id === cardId)
+}
 
 // Handle drag end
 const handleDragEnd = () => {

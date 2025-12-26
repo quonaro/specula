@@ -1,9 +1,12 @@
 <template>
   <div 
     ref="columnRef"
-    class="relative flex flex-col h-full border-l border-r border-border"
-    :class="{ 'last:border-r-0': isLast }"
-    :style="{ width: `${width}%`, minWidth: `${minWidth}px` }"
+    class="relative flex flex-col h-full column-separator"
+    :class="{ 'last-separator': isLast }"
+    :style="{ 
+      width: `${width}%`, 
+      minWidth: `${minWidth}px`
+    }"
   >
     <slot />
     <div
@@ -103,4 +106,32 @@ onUnmounted(() => {
   document.removeEventListener('mouseup', stopResize)
 })
 </script>
+
+<style scoped>
+.column-separator::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0.5px;
+  background-color: hsl(var(--border));
+  pointer-events: none;
+}
+
+.column-separator::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 0.5px;
+  background-color: hsl(var(--border));
+  pointer-events: none;
+}
+
+.column-separator.last-separator::after {
+  display: none;
+}
+</style>
 
