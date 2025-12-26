@@ -132,6 +132,9 @@ import { useToast } from '@/composables/useToast'
 import type { Operation, OpenAPISpec, PathItem, SecurityScheme } from '@/types/openapi'
 import { RefResolver } from '@/utils/ref-resolver'
 import { getOperationSecurity } from '@/utils/openapi-parser'
+import { useRequestHistoryStore } from '@/stores/requestHistory'
+import { useEnvironmentStore } from '@/stores/environment'
+import { ResponseValidator } from '@/utils/response-validator'
 
 interface Props {
   method: string
@@ -152,6 +155,9 @@ const emit = defineEmits<{
 
 const { toast } = useToast()
 const resolver = new RefResolver(props.spec)
+const requestHistoryStore = useRequestHistoryStore()
+const environmentStore = useEnvironmentStore()
+const responseValidator = new ResponseValidator(props.spec)
 
 // Get effective security requirements for this operation
 const operationSecurity = computed(() => {
@@ -606,12 +612,17 @@ onMounted(() => {
   loadSavedRequestBody()
 })
 
-// Build request URL with path and query parameters
+// Build request URL with path and query parameters (with variable resolution)
 const buildRequestUrl = (): string => {
-  const serverUrl = props.serverUrl || ''
+  let serverUrl = props.serverUrl || ''
   if (!serverUrl) return ''
 
+  // Resolve variables in server URL
+  serverUrl = environmentStore.resolveVariable(serverUrl)
+
   let url = serverUrl + props.path
+  // Resolve variables in path
+  url = environmentStore.resolveVariable(url)
   const queryParams: string[] = []
 
   // Add authorization query parameters according to OpenAPI spec
@@ -635,9 +646,12 @@ const buildRequestUrl = (): string => {
 
   parameters.value.forEach((param) => {
     const resolvedParam = resolver.resolve(param)
-    const value = paramValues.value[resolvedParam.name]
+    let value = paramValues.value[resolvedParam.name]
 
     if (value) {
+      // Resolve variables in parameter values
+      value = environmentStore.resolveVariable(value)
+      
       if (resolvedParam.in === 'path') {
         url = url.replace(`{${resolvedParam.name}}`, encodeURIComponent(value))
       } else if (resolvedParam.in === 'query') {
@@ -653,7 +667,7 @@ const buildRequestUrl = (): string => {
   return url
 }
 
-// Get request headers and cookies
+// Get request headers and cookies (with variable resolution)
 const getRequestHeaders = (): { headers: Record<string, string>; cookies: string[] } => {
   const headers: Record<string, string> = {}
   const cookies: string[] = []
@@ -964,7 +978,10 @@ const handleExecute = async () => {
       return
     }
 
-    let url = serverUrl + props.path
+    // Resolve variables in server URL and path
+    let resolvedServerUrl = environmentStore.resolveVariable(serverUrl)
+    let resolvedPath = environmentStore.resolveVariable(props.path)
+    let url = resolvedServerUrl + resolvedPath
     const queryParams: string[] = []
 
     // Add authorization query parameters according to OpenAPI spec
@@ -988,9 +1005,12 @@ const handleExecute = async () => {
 
     parameters.value.forEach((param) => {
       const resolvedParam = resolver.resolve(param)
-      const value = paramValues.value[resolvedParam.name]
+      let value = paramValues.value[resolvedParam.name]
 
       if (value) {
+        // Resolve variables in parameter values
+        value = environmentStore.resolveVariable(value)
+        
         if (resolvedParam.in === 'path') {
           url = url.replace(`{${resolvedParam.name}}`, encodeURIComponent(value))
         } else if (resolvedParam.in === 'query') {
@@ -1023,11 +1043,20 @@ const handleExecute = async () => {
     // Handle header parameters (always add them, may override auth headers)
     parameters.value.forEach((param) => {
       const resolvedParam = resolver.resolve(param)
-      const value = paramValues.value[resolvedParam.name]
+      let value = paramValues.value[resolvedParam.name]
       if (value && resolvedParam.in === 'header') {
+        // Resolve variables in header values
+        value = environmentStore.resolveVariable(value)
         headers[resolvedParam.name] = value
       }
     })
+    
+    // Resolve variables in all headers
+    const resolvedHeaders: Record<string, string> = {}
+    for (const [key, value] of Object.entries(headers)) {
+      resolvedHeaders[key] = environmentStore.resolveVariable(value)
+    }
+    Object.assign(headers, resolvedHeaders)
 
     // Handle file request body with application/octet-stream (send file directly)
     if (hasFileRequestBody && requestBodyFile.value && isOctetStreamBody && !isMultipartBody) {
@@ -1087,8 +1116,13 @@ const handleExecute = async () => {
       if (props.method.toLowerCase() !== 'get' && props.method.toLowerCase() !== 'head') {
         if (hasRequestBody.value && requestBody.value) {
           try {
-            const bodyObj = JSON.parse(requestBody.value)
-            body = JSON.stringify(bodyObj)
+            let bodyStr = requestBody.value
+            // Resolve variables in request body
+            bodyStr = environmentStore.resolveVariable(bodyStr)
+            const bodyObj = JSON.parse(bodyStr)
+            // Resolve variables in parsed object (for nested values)
+            const resolvedBodyObj = environmentStore.resolveVariables(bodyObj)
+            body = JSON.stringify(resolvedBodyObj)
           } catch (e) {
             toast({
               title: 'Invalid JSON',
@@ -1130,6 +1164,14 @@ const handleExecute = async () => {
       responseHeaders[key] = value
     })
 
+    // Validate response against OpenAPI schema
+    const validation = responseValidator.validateResponse(
+      props.operation,
+      res.status,
+      responseData,
+      responseHeaders
+    )
+
     const responsePayload = {
       status: res.status,
       statusText: res.statusText,
@@ -1137,9 +1179,41 @@ const handleExecute = async () => {
       data: responseData,
       duration,
       url,
+      validation, // Include validation results
     }
 
     response.value = responsePayload
+    
+    // Add to request history
+    requestHistoryStore.addRequest({
+      method: props.method,
+      path: props.path,
+      url,
+      status: res.status,
+      statusText: res.statusText,
+      duration,
+      requestHeaders: headers,
+      requestBody: body ? (typeof body === 'string' ? JSON.parse(body) : body) : undefined,
+      responseHeaders,
+      responseData,
+      operationId: props.operation.operationId,
+      specTitle: props.spec.info?.title,
+    })
+    
+    // Show validation warnings/errors
+    if (validation.errors.length > 0) {
+      toast({
+        title: 'Validation Errors',
+        description: `Response validation failed: ${validation.errors.length} error(s)`,
+        variant: 'destructive',
+      })
+    } else if (validation.warnings.length > 0) {
+      toast({
+        title: 'Validation Warnings',
+        description: `Response validation: ${validation.warnings.length} warning(s)`,
+      })
+    }
+    
     // Emit response to parent component
     emit('response', responsePayload)
 
@@ -1155,12 +1229,25 @@ const handleExecute = async () => {
       return
     }
 
-    const serverUrl = props.serverUrl || ''
+    let serverUrl = props.serverUrl || ''
+    serverUrl = environmentStore.resolveVariable(serverUrl)
+    
     response.value = {
       error: true,
       message: error.message,
       url: (serverUrl || '') + props.path,
     }
+
+    // Add to request history even on error
+    requestHistoryStore.addRequest({
+      method: props.method,
+      path: props.path,
+      url: (serverUrl || '') + props.path,
+      error: true,
+      errorMessage: error.message,
+      operationId: props.operation.operationId,
+      specTitle: props.spec.info?.title,
+    })
 
     emit('response', response.value)
 

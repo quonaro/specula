@@ -14,10 +14,17 @@ import logoUrl from '/logo.png'
 import Index from './pages/Index.vue'
 import NotFound from './pages/NotFound.vue'
 
+export interface CustomTheme {
+  id: string
+  name: string
+  cssUrl: string
+}
+
 export interface SpeculaConfig {
   container: string | HTMLElement
   openapi: string | string[]
   base?: string // Base path for routing (e.g., '/docs' for FastAPI integration)
+  themes?: Record<string, string> // Custom themes: { "Theme Name": "https://example.com/theme.css" }
 }
 
 export interface SpeculaInstance {
@@ -131,6 +138,19 @@ export async function init(config: SpeculaConfig): Promise<SpeculaInstance> {
 
   // Initialize theme before mounting
   const themeStore = useThemeStore()
+  
+  // Add custom themes from config if provided
+  if (config.themes) {
+    for (const [name, cssUrl] of Object.entries(config.themes)) {
+      const themeId = name.toLowerCase().replace(/\s+/g, '-')
+      themeStore.addCustomTheme({
+        id: themeId,
+        name: name,
+        cssUrl: cssUrl,
+      })
+    }
+  }
+  
   themeStore.initTheme()
 
   // Initialize settings before mounting

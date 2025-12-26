@@ -1,0 +1,188 @@
+/**
+ * Specula Custom Theme Example
+ * 
+ * This is an example of how to create a custom theme for Specula.
+ * Copy this file and modify the CSS variables to create your own theme.
+ * 
+ * Usage:
+ * 1. Save this file as your-theme.css
+ * 2. Host it on a web server (or use a CDN)
+ * 3. Add it to Specula using:
+ *    - Standalone: Specula.init({ themes: { "My Theme": "https://example.com/your-theme.css" } })
+ *    - Or load it manually in the Settings dialog
+ */
+
+/* 
+ * All colors MUST be in HSL format: "H S% L%"
+ * Where:
+ * - H = Hue (0-360)
+ * - S = Saturation (0-100%)
+ * - L = Lightness (0-100%)
+ * 
+ * Do NOT include "hsl()" wrapper - just the values: "220 13% 13%"
+ */
+
+/* Base Colors - Main background and text */
+:root {
+  /* Background colors */
+  --background: 240 10% 96%;
+  --foreground: 240 20% 8%;
+
+  /* Card colors (for panels, dialogs, etc.) */
+  --card: 0 0% 100%;
+  --card-foreground: 240 20% 8%;
+
+  /* Popover colors (dropdowns, tooltips) */
+  --popover: 0 0% 100%;
+  --popover-foreground: 240 20% 8%;
+
+  /* Primary colors (main accent color) */
+  --primary: 240 70% 50%;
+  --primary-foreground: 0 0% 100%;
+
+  /* Secondary colors */
+  --secondary: 240 10% 92%;
+  --secondary-foreground: 240 20% 8%;
+
+  /* Muted colors (subtle backgrounds and text) */
+  --muted: 240 10% 92%;
+  --muted-foreground: 240 10% 45%;
+
+  /* Accent colors (highlights, hover states) */
+  --accent: 240 70% 50%;
+  --accent-foreground: 0 0% 100%;
+
+  /* Destructive colors (errors, delete actions) */
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+
+  /* Border and input colors */
+  --border: 240 10% 88%;
+  --input: 240 10% 88%;
+  --ring: 240 70% 50%;
+
+  /* Border radius */
+  --radius: 0.5rem;
+
+  /* Sidebar colors */
+  --sidebar-background: 240 10% 98%;
+  --sidebar-foreground: 240 20% 8%;
+  --sidebar-primary: 240 70% 50%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 240 10% 92%;
+  --sidebar-accent-foreground: 240 20% 8%;
+  --sidebar-border: 240 10% 88%;
+  --sidebar-ring: 240 70% 50%;
+
+  /* HTTP Method Colors - These control the badge colors for GET, POST, PUT, DELETE, PATCH, etc. */
+  --method-get: 217 91% 60%;      /* Blue for GET */
+  --method-post: 142 76% 36%;     /* Green for POST */
+  --method-put: 25 95% 53%;       /* Orange for PUT */
+  --method-delete: 0 84% 60%;     /* Red for DELETE */
+  --method-patch: 271 91% 65%;    /* Purple for PATCH */
+  --method-options: 215 16% 47%;  /* Gray for OPTIONS */
+  --method-head: 199 89% 48%;     /* Cyan for HEAD */
+  --method-trace: 330 81% 60%;    /* Pink for TRACE */
+
+  /* Code block colors */
+  --code-bg: 240 10% 97%;
+  --code-border: 240 10% 88%;
+}
+
+/* 
+ * Dark Mode Support (Optional)
+ * If you want your theme to support dark mode, add a .dark class selector
+ */
+.dark {
+  /* Background colors */
+  --background: 240 20% 12%;
+  --foreground: 240 10% 96%;
+
+  /* Card colors */
+  --card: 240 18% 16%;
+  --card-foreground: 240 10% 96%;
+
+  /* Popover colors */
+  --popover: 240 18% 16%;
+  --popover-foreground: 240 10% 96%;
+
+  /* Primary colors */
+  --primary: 240 70% 60%;
+  --primary-foreground: 0 0% 100%;
+
+  /* Secondary colors */
+  --secondary: 240 15% 22%;
+  --secondary-foreground: 240 10% 96%;
+
+  /* Muted colors */
+  --muted: 240 15% 22%;
+  --muted-foreground: 240 10% 65%;
+
+  /* Accent colors */
+  --accent: 240 70% 60%;
+  --accent-foreground: 0 0% 100%;
+
+  /* Destructive colors */
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+
+  /* Border and input colors */
+  --border: 240 15% 22%;
+  --input: 240 15% 22%;
+  --ring: 240 70% 60%;
+
+  /* Sidebar colors */
+  --sidebar-background: 240 20% 10%;
+  --sidebar-foreground: 240 10% 96%;
+  --sidebar-primary: 240 70% 60%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 240 15% 18%;
+  --sidebar-accent-foreground: 240 10% 96%;
+  --sidebar-border: 240 15% 22%;
+  --sidebar-ring: 240 70% 60%;
+
+  /* HTTP Method Colors - Brighter for dark mode */
+  --method-get: 217 91% 70%;
+  --method-post: 142 76% 46%;
+  --method-put: 25 95% 63%;
+  --method-delete: 0 84% 70%;
+  --method-patch: 271 91% 75%;
+  --method-options: 215 20% 65%;
+  --method-head: 199 89% 58%;
+  --method-trace: 330 81% 70%;
+
+  /* Code block colors */
+  --code-bg: 240 18% 14%;
+  --code-border: 240 15% 28%;
+}
+
+/* 
+ * Custom Styling (Optional)
+ * You can add additional CSS rules to customize specific elements
+ */
+
+/* Example: Custom scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 0.3);
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.5);
+}
+
+/* Example: Custom focus styles */
+*:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+

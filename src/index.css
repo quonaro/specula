@@ -114,6 +114,232 @@ All colors MUST be HSL.
     --code-bg: 220 24% 16%;
     --code-border: 220 17% 28%;
   }
+
+  /* Light Theme Variants */
+  [data-theme="light-1"] {
+    /* Warm Light - Cream/Beige tones */
+    --background: 40 20% 98%;
+    --foreground: 30 15% 12%;
+    --card: 40 15% 100%;
+    --card-foreground: 30 15% 12%;
+    --popover: 40 15% 100%;
+    --popover-foreground: 30 15% 12%;
+    --secondary: 40 18% 94%;
+    --secondary-foreground: 30 15% 12%;
+    --muted: 40 18% 94%;
+    --muted-foreground: 30 12% 45%;
+    --border: 40 15% 88%;
+    --input: 40 15% 88%;
+    --sidebar-background: 40 20% 97%;
+    --sidebar-foreground: 30 15% 12%;
+    --sidebar-accent: 40 18% 94%;
+    --sidebar-accent-foreground: 30 15% 12%;
+    --sidebar-border: 40 15% 88%;
+    --code-bg: 40 18% 96%;
+    --code-border: 40 15% 88%;
+    /* HTTP Method Colors - Warm tones */
+    --method-get: 200 85% 55%;
+    --method-post: 150 70% 32%;
+    --method-put: 30 90% 50%;
+    --method-delete: 5 80% 55%;
+    --method-patch: 280 85% 60%;
+    --method-options: 35 60% 42%;
+    --method-head: 190 75% 45%;
+    --method-trace: 320 75% 55%;
+  }
+
+  [data-theme="light-2"] {
+    /* Soft Pink Light - Rose tones */
+    --background: 340 25% 98%;
+    --foreground: 330 20% 10%;
+    --card: 340 20% 100%;
+    --card-foreground: 330 20% 10%;
+    --popover: 340 20% 100%;
+    --popover-foreground: 330 20% 10%;
+    --secondary: 340 22% 94%;
+    --secondary-foreground: 330 20% 10%;
+    --muted: 340 22% 94%;
+    --muted-foreground: 330 15% 44%;
+    --border: 340 20% 90%;
+    --input: 340 20% 90%;
+    --sidebar-background: 340 25% 97%;
+    --sidebar-foreground: 330 20% 10%;
+    --sidebar-accent: 340 22% 94%;
+    --sidebar-accent-foreground: 330 20% 10%;
+    --sidebar-border: 340 20% 90%;
+    --code-bg: 340 22% 96%;
+    --code-border: 340 20% 90%;
+    /* HTTP Method Colors - Rose/Pink tones */
+    --method-get: 220 88% 58%;
+    --method-post: 145 72% 34%;
+    --method-put: 20 92% 51%;
+    --method-delete: 350 82% 58%;
+    --method-patch: 300 88% 63%;
+    --method-options: 320 50% 45%;
+    --method-head: 200 85% 46%;
+    --method-trace: 330 78% 58%;
+  }
+
+  [data-theme="light-3"] {
+    /* Cool Blue Light - Sky tones */
+    --background: 210 30% 98%;
+    --foreground: 220 25% 8%;
+    --card: 210 25% 100%;
+    --card-foreground: 220 25% 8%;
+    --popover: 210 25% 100%;
+    --popover-foreground: 220 25% 8%;
+    --secondary: 210 28% 94%;
+    --secondary-foreground: 220 25% 8%;
+    --muted: 210 28% 94%;
+    --muted-foreground: 220 20% 42%;
+    --border: 210 25% 88%;
+    --input: 210 25% 88%;
+    --sidebar-background: 210 30% 97%;
+    --sidebar-foreground: 220 25% 8%;
+    --sidebar-accent: 210 28% 94%;
+    --sidebar-accent-foreground: 220 25% 8%;
+    --sidebar-border: 210 25% 88%;
+    --code-bg: 210 28% 96%;
+    --code-border: 210 25% 88%;
+    /* HTTP Method Colors - Cool blue tones */
+    --method-get: 215 92% 62%;
+    --method-post: 160 75% 38%;
+    --method-put: 30 95% 55%;
+    --method-delete: 0 85% 62%;
+    --method-patch: 265 90% 67%;
+    --method-options: 210 40% 48%;
+    --method-head: 200 90% 50%;
+    --method-trace: 325 82% 62%;
+  }
+
+  /* Dark Theme Variants */
+  [data-theme="dark-1"] {
+    /* Warm Dark - Brown/Amber tones */
+    --background: 30 20% 12%;
+    --foreground: 45 30% 96%;
+    --card: 30 18% 16%;
+    --card-foreground: 45 30% 96%;
+    --popover: 30 18% 16%;
+    --popover-foreground: 45 30% 96%;
+    --secondary: 30 15% 22%;
+    --secondary-foreground: 45 30% 96%;
+    --muted: 30 15% 22%;
+    --muted-foreground: 40 20% 65%;
+    --border: 30 15% 22%;
+    --input: 30 15% 22%;
+    --sidebar-background: 30 20% 10%;
+    --sidebar-foreground: 45 30% 96%;
+    --sidebar-accent: 30 15% 18%;
+    --sidebar-accent-foreground: 45 30% 96%;
+    --sidebar-border: 30 15% 22%;
+    --code-bg: 30 18% 14%;
+    --code-border: 30 15% 26%;
+    /* HTTP Method Colors - Warm amber tones */
+    --method-get: 200 85% 68%;
+    --method-post: 150 70% 50%;
+    --method-put: 35 90% 65%;
+    --method-delete: 10 80% 68%;
+    --method-patch: 280 85% 73%;
+    --method-options: 40 55% 68%;
+    --method-head: 190 75% 60%;
+    --method-trace: 320 75% 68%;
+  }
+
+  [data-theme="dark-2"] {
+    /* Blue Dark - Ocean tones */
+    --background: 220 30% 12%;
+    --foreground: 210 40% 97%;
+    --card: 220 28% 16%;
+    --card-foreground: 210 40% 97%;
+    --popover: 220 28% 16%;
+    --popover-foreground: 210 40% 97%;
+    --secondary: 220 25% 22%;
+    --secondary-foreground: 210 40% 97%;
+    --muted: 220 25% 22%;
+    --muted-foreground: 215 25% 63%;
+    --border: 220 25% 22%;
+    --input: 220 25% 22%;
+    --sidebar-background: 220 30% 10%;
+    --sidebar-foreground: 210 40% 97%;
+    --sidebar-accent: 220 25% 18%;
+    --sidebar-accent-foreground: 210 40% 97%;
+    --sidebar-border: 220 25% 22%;
+    --code-bg: 220 28% 14%;
+    --code-border: 220 25% 26%;
+    /* HTTP Method Colors - Ocean blue tones */
+    --method-get: 215 92% 72%;
+    --method-post: 160 75% 50%;
+    --method-put: 30 95% 65%;
+    --method-delete: 0 85% 72%;
+    --method-patch: 265 90% 77%;
+    --method-options: 210 40% 68%;
+    --method-head: 200 90% 62%;
+    --method-trace: 325 82% 72%;
+  }
+
+  [data-theme="dark-3"] {
+    /* Purple Dark - Violet tones */
+    --background: 270 25% 11%;
+    --foreground: 280 30% 96%;
+    --card: 270 23% 15%;
+    --card-foreground: 280 30% 96%;
+    --popover: 270 23% 15%;
+    --popover-foreground: 280 30% 96%;
+    --secondary: 270 20% 20%;
+    --secondary-foreground: 280 30% 96%;
+    --muted: 270 20% 20%;
+    --muted-foreground: 275 25% 62%;
+    --border: 270 20% 20%;
+    --input: 270 20% 20%;
+    --sidebar-background: 270 25% 9%;
+    --sidebar-foreground: 280 30% 96%;
+    --sidebar-accent: 270 20% 16%;
+    --sidebar-accent-foreground: 280 30% 96%;
+    --sidebar-border: 270 20% 20%;
+    --code-bg: 270 23% 13%;
+    --code-border: 270 20% 24%;
+    /* HTTP Method Colors - Violet/purple tones */
+    --method-get: 220 88% 70%;
+    --method-post: 145 72% 48%;
+    --method-put: 20 92% 63%;
+    --method-delete: 350 82% 70%;
+    --method-patch: 300 88% 75%;
+    --method-options: 320 50% 65%;
+    --method-head: 200 85% 58%;
+    --method-trace: 330 78% 70%;
+  }
+
+  [data-theme="deepdark"] {
+    /* Deep Dark - Pure black with green accent */
+    --background: 0 0% 2%;
+    --foreground: 150 20% 98%;
+    --card: 0 0% 5%;
+    --card-foreground: 150 20% 98%;
+    --popover: 0 0% 5%;
+    --popover-foreground: 150 20% 98%;
+    --secondary: 0 0% 8%;
+    --secondary-foreground: 150 20% 98%;
+    --muted: 0 0% 8%;
+    --muted-foreground: 150 15% 65%;
+    --border: 0 0% 12%;
+    --input: 0 0% 12%;
+    --sidebar-background: 0 0% 1%;
+    --sidebar-foreground: 150 20% 98%;
+    --sidebar-accent: 0 0% 6%;
+    --sidebar-accent-foreground: 150 20% 98%;
+    --sidebar-border: 0 0% 12%;
+    --code-bg: 0 0% 4%;
+    --code-border: 0 0% 15%;
+    /* HTTP Method Colors - High contrast for deep dark */
+    --method-get: 217 95% 75%;
+    --method-post: 142 80% 52%;
+    --method-put: 25 98% 68%;
+    --method-delete: 0 88% 75%;
+    --method-patch: 271 95% 80%;
+    --method-options: 215 25% 70%;
+    --method-head: 199 93% 63%;
+    --method-trace: 330 85% 75%;
+  }
 }
 
 @layer base {
@@ -123,6 +349,15 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+  }
+
+  /* Smooth theme transitions */
+  html {
+    transition: background-color 0.6s ease, color 0.6s ease;
+  }
+
+  html * {
+    transition: background-color 0.6s ease, color 0.6s ease, border-color 0.6s ease, box-shadow 0.6s ease;
   }
 }
 
