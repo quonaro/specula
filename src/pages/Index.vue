@@ -82,9 +82,9 @@
               <ArrowLeft class="h-4 w-4 mr-2" />
               Back to Selection
             </Button>
-            <Button variant="outline" size="sm" @click="showDownloadDialog = true">
+            <Button variant="outline" size="sm" @click="showExportDialog = true">
               <Download class="h-4 w-4 mr-2" />
-              Download
+              Export
             </Button>
             <Button variant="outline" size="sm" @click="showSettingsDialog = true">
               <Settings class="h-4 w-4" />
@@ -135,8 +135,8 @@
       </main>
     </div>
 
-    <!-- Download Dialog -->
-    <DownloadDialog v-model="showDownloadDialog" :specs="specStore.specs" />
+    <!-- Export Dialog -->
+    <ExportDialog v-model="showExportDialog" :specs="specStore.specs" />
 
     <!-- Settings Dialog -->
     <SettingsDialog v-model="showSettingsDialog" />
@@ -169,7 +169,7 @@ import { ref, computed, watch, defineAsyncComponent } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Download, ArrowLeft, Key, Github, Search, Settings } from 'lucide-vue-next'
 import Sidebar from '@/components/Sidebar.vue'
-import DownloadDialog from '@/components/DownloadDialog.vue'
+import ExportDialog from '@/components/ExportDialog.vue'
 import AuthorizationSettingsDialog from '@/components/AuthorizationSettingsDialog.vue'
 import SettingsDialog from '@/components/SettingsDialog.vue'
 import Dialog from '@/components/ui/Dialog.vue'
@@ -210,7 +210,7 @@ const logoUrl = computed(() => getLogoUrl())
 const tagTree = ref<TagNode | null>(null)
 const selectedOperation = ref<{ method: string; path: string } | null>(null)
 const selectedGroup = ref<TagNode | null>(null)
-const showDownloadDialog = ref(false)
+const showExportDialog = ref(false)
 const showAuthorizationDialog = ref(false)
 const showSpecSelectionDialog = ref(false)
 const showSettingsDialog = ref(false)

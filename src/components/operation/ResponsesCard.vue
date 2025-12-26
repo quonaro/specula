@@ -1,6 +1,9 @@
 <template>
   <Card class="p-6 space-y-4">
-    <h3 class="text-lg font-semibold text-foreground">Responses</h3>
+    <div class="flex items-center gap-2">
+      <FileText class="w-5 h-5 text-primary" />
+      <h3 class="text-lg font-semibold text-foreground">Responses</h3>
+    </div>
     <div class="space-y-4">
       <div v-for="[code, response] in Object.entries(operation.responses)" :key="code"
         class="border border-border rounded-lg p-4 space-y-3">
@@ -119,7 +122,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, shallowRef } from 'vue'
-import { Copy, Check } from 'lucide-vue-next'
+import { Copy, Check, FileText } from 'lucide-vue-next'
 import type { Operation, OpenAPISpec, MediaType } from '@/types/openapi'
 import { RefResolver } from '@/utils/ref-resolver'
 import { getStatusColorClass } from '@/utils/operation-cache'

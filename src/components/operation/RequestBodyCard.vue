@@ -1,6 +1,9 @@
 <template>
   <Card class="p-6 space-y-4">
-    <h3 class="text-lg font-semibold text-foreground">Request Body</h3>
+    <div class="flex items-center gap-2">
+      <FileJson class="w-5 h-5 text-primary" />
+      <h3 class="text-lg font-semibold text-foreground">Request Body</h3>
+    </div>
     <template v-if="resolvedBody">
       <p v-if="resolvedBody.description" class="text-sm text-muted-foreground">
         {{ resolvedBody.description }}
@@ -44,6 +47,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { FileJson } from 'lucide-vue-next'
 import type { Operation, OpenAPISpec, MediaType, Encoding } from '@/types/openapi'
 import { RefResolver } from '@/utils/ref-resolver'
 import Badge from '../ui/Badge.vue'
