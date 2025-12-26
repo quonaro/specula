@@ -4,7 +4,7 @@
     <p v-if="schema.description && depth > 0" class="text-sm text-muted-foreground">
       {{ schema.description }}
     </p>
-
+    
     <div class="flex flex-wrap gap-2">
       <Badge v-if="schema.type" variant="outline">type: {{ schema.type }}</Badge>
       <Badge v-if="schema.format" variant="outline">format: {{ schema.format }}</Badge>

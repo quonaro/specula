@@ -59,7 +59,7 @@
           <!-- Regular input for non-file parameters -->
           <div v-else class="flex items-center gap-2">
             <Input :model-value="paramValues[resolver.resolve(param).name] || ''"
-              @update:model-value="(val: string) => updateParamValue(resolver.resolve(param).name, val)"
+            @update:model-value="(val: string) => updateParamValue(resolver.resolve(param).name, val)"
               :placeholder="`Enter ${resolver.resolve(param).name}`" class="flex-1" />
             <label class="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer whitespace-nowrap">
               <input type="checkbox" :checked="rememberParam[resolver.resolve(param).name] || false"
@@ -74,7 +74,7 @@
       <!-- Request Body -->
       <div v-if="hasRequestBody" class="space-y-2">
         <div class="flex items-center justify-between">
-          <h4 class="text-sm font-semibold">Request Body</h4>
+        <h4 class="text-sm font-semibold">Request Body</h4>
           <label v-if="!isRequestBodyFile"
             class="flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer">
             <input type="checkbox" :checked="rememberBody" @change="toggleRememberBody"
@@ -915,14 +915,14 @@ const generatedCommand = computed(() => {
 const handleCopyCommand = async (command: string) => {
   try {
     await navigator.clipboard.writeText(command)
-    commandCopied.value = true
-    setTimeout(() => {
-      commandCopied.value = false
-    }, 2000)
-    toast({
-      title: 'Copied!',
-      description: 'Command copied to clipboard',
-    })
+  commandCopied.value = true
+  setTimeout(() => {
+    commandCopied.value = false
+  }, 2000)
+  toast({
+    title: 'Copied!',
+    description: 'Command copied to clipboard',
+  })
   } catch (error) {
     console.error('Failed to copy command:', error)
     toast({
