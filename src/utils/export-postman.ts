@@ -636,3 +636,4 @@ function generateExampleFromSchema(schema: any, resolver: RefResolver): any {
   }
 }
 
+
