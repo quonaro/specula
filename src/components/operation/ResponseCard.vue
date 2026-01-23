@@ -40,12 +40,9 @@
       </ul>
     </div>
 
-    <Textarea 
-      :model-value="getResponseText" 
-      readonly
-      auto-resize
-      class="max-h-[800px] w-full bg-code-bg border border-code-border text-xs font-mono" 
-    />
+    <ScrollArea class="max-h-[600px] w-full rounded-md bg-code-bg border border-code-border">
+      <pre class="p-4 text-xs font-mono whitespace-pre-wrap break-all text-foreground">{{ getResponseText }}</pre>
+    </ScrollArea>
   </Card>
 </template>
 
@@ -57,7 +54,7 @@ import { useToast } from '@/composables/useToast'
 import Badge from '../ui/Badge.vue'
 import Card from '../ui/Card.vue'
 import Button from '../ui/Button.vue'
-import Textarea from '../ui/Textarea.vue'
+import ScrollArea from '../ui/ScrollArea.vue'
 
 interface Props {
   response?: any
