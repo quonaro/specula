@@ -40,15 +40,16 @@
       </ul>
     </div>
 
-    <ScrollArea class="max-h-[600px] w-full rounded-md bg-code-bg border border-code-border">
+    <ScrollArea class="max-h-[600px] w-full rounded-md bg-code-bg border border-code-border no-drag cursor-text">
       <pre class="p-4 text-xs font-mono whitespace-pre-wrap break-all text-foreground">{{ getResponseText }}</pre>
     </ScrollArea>
   </Card>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { computed, watch } from 'vue'
 import { Copy, Check, FileText, AlertCircle, AlertTriangle } from 'lucide-vue-next'
+import { useClipboard } from '@vueuse/core'
 import { getStatusColorClass } from '@/utils/operation-cache'
 import { useToast } from '@/composables/useToast'
 import Badge from '../ui/Badge.vue'
@@ -56,19 +57,33 @@ import Card from '../ui/Card.vue'
 import Button from '../ui/Button.vue'
 import ScrollArea from '../ui/ScrollArea.vue'
 
+interface ValidationError {
+  path: string
+  message: string
+}
+
+interface Validation {
+  errors?: ValidationError[]
+  warnings?: ValidationError[]
+}
+
+interface ResponseData {
+  status: number
+  statusText?: string
+  data?: unknown
+  error?: boolean
+  message?: string
+  validation?: Validation
+}
+
 interface Props {
-  response?: any
+  response?: ResponseData | any
 }
 
 const props = defineProps<Props>()
 
 const { toast } = useToast()
-const copied = ref(false)
-
-// Watch for response changes and reset copied state
-watch(() => props.response, () => {
-  copied.value = false
-})
+const { copy, copied, isSupported } = useClipboard({ legacy: true })
 
 // Get response text for display
 const getResponseText = computed((): string => {
@@ -114,57 +129,17 @@ const getResponseText = computed((): string => {
   }
 })
 
-// Copy text to clipboard with fallback
-const copyToClipboard = async (text: string): Promise<boolean> => {
-  // Try modern Clipboard API first
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    try {
-      await navigator.clipboard.writeText(text)
-      return true
-    } catch (error) {
-      console.warn('Clipboard API failed, trying fallback:', error)
-      // Fall through to fallback method
-    }
-  }
-
-  // Fallback method for older browsers or when Clipboard API fails
-  try {
-    const textArea = document.createElement('textarea')
-    textArea.value = text
-    textArea.style.position = 'fixed'
-    textArea.style.left = '-999999px'
-    textArea.style.top = '-999999px'
-    document.body.appendChild(textArea)
-    textArea.focus()
-    textArea.select()
-
-    const successful = document.execCommand('copy')
-    document.body.removeChild(textArea)
-
-    if (!successful) {
-      throw new Error('execCommand copy failed')
-    }
-    return true
-  } catch (error) {
-    console.error('Fallback copy method failed:', error)
-    return false
-  }
-}
-
 // Handle copy
 const handleCopy = async (text: string) => {
-  const success = await copyToClipboard(text)
+  await copy(text)
 
-  if (success) {
-    copied.value = true
-    setTimeout(() => {
-      copied.value = false
-    }, 2000)
+  if (copied.value) {
     toast({
       title: 'Copied!',
       description: 'Response copied to clipboard',
     })
   } else {
+    // If copied is false immediately after copy(), it likely failed
     toast({
       title: 'Copy Failed',
       description: 'Failed to copy response to clipboard. Please try selecting and copying manually.',
