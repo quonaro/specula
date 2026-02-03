@@ -108,7 +108,7 @@ jobs:
               <meta name="viewport" content="width=device-width, initial-scale=1.0">
               <title>My API Documentation</title>
               <!-- Load Specula CSS from Official CDN -->
-              <link rel="stylesheet" href="https://cdn.d3vb0x.ru/Specula/specula.css">
+              <link rel="stylesheet" href="https://ghly.d3vb0x.ru/quonaro/Specula/specula.css?ref=standalone">
               <style>
                   #specula-container {
                       width: 100%;
@@ -121,7 +121,7 @@ jobs:
               <div id="specula-container"></div>
               
               <!-- Load Specula JavaScript from Official CDN -->
-              <script src="https://cdn.d3vb0x.ru/Specula/specula.js"></script>
+              <script src="https://ghly.d3vb0x.ru/quonaro/Specula/specula.js?ref=standalone"></script>
               <script>
                   // Initialize Specula
                   Specula.init({
@@ -326,52 +326,6 @@ jobs:
           git commit -m "Update standalone bundle [skip ci]" || exit 0
           git push https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git standalone --force
 
-      - name: Deploy to CDN
-        env:
-          CDN_SSH_KEY: ${{ secrets.CDN_SSH_KEY }}
-          CDN_HOST: cdn.d3vb0x.ru
-          CDN_USER: cdn
-          CDN_PORT: 58928
-        run: |
-          # Setup SSH
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-          
-          # Write SSH key with proper formatting
-          echo "$CDN_SSH_KEY" > ~/.ssh/cdn_key
-          chmod 600 ~/.ssh/cdn_key
-          
-          # Verify key file exists and has content
-          if [ ! -s ~/.ssh/cdn_key ]; then
-            echo "Error: SSH key file is empty or missing"
-            exit 1
-          fi
-          
-          # Add server to known_hosts
-          ssh-keyscan -p $CDN_PORT $CDN_HOST >> ~/.ssh/known_hosts 2>/dev/null || true
-          chmod 600 ~/.ssh/known_hosts
-          
-          # Test SSH connection
-          echo "Testing SSH connection..."
-          ssh -i ~/.ssh/cdn_key -p $CDN_PORT -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/known_hosts \
-            $CDN_USER@$CDN_HOST "echo 'SSH connection successful'" || {
-            echo "SSH connection failed"
-            exit 1
-          }
-          
-          # Create directory on CDN server if it doesn't exist
-          ssh -i ~/.ssh/cdn_key -p $CDN_PORT -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/known_hosts \
-            $CDN_USER@$CDN_HOST "mkdir -p /home/cdn/files/Specula"
-          
-          # Copy files to CDN
-          scp -i ~/.ssh/cdn_key -P $CDN_PORT -o StrictHostKeyChecking=no -o UserKnownHostsFile=~/.ssh/known_hosts \
-            dist/specula.js dist/specula.css \
-            $CDN_USER@$CDN_HOST:/home/cdn/files/Specula/
-          
-          echo "Files deployed successfully to CDN"
-          
-          # Cleanup
-          rm -f ~/.ssh/cdn_key
 
   deploy-github-pages:
     name: Build & Deploy to GitHub Pages
