@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Specula Standalone Example</title>
+    <style>
+        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+        #specula-container { width: 100%; height: 100vh; }
+    </style>
+    <link rel="stylesheet" href="./specula.css">
+</head>
+<body>
+    <div id="specula-container"></div>
+    <script src="./specula.js"></script>
+    <script>
+        Specula.init({
+            container: '#specula-container',
+            openapi: 'https://petstore3.swagger.io/api/v3/openapi.json'
+        }).catch(function(error) {
+            console.error('Failed to initialize Specula:', error);
+        });
+    </script>
+</body>
+</html>
