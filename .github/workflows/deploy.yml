@@ -347,7 +347,7 @@ jobs:
 
       - name: Build project
         env:
-          VITE_BASE_PATH: /Specula/
+          VITE_BASE_PATH: /specula/
           VITE_WITHOUT_BACKEND: 'true'
           VITE_EXAMPLE: 'true'
         run: npm run build
