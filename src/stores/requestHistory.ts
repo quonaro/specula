@@ -18,6 +18,10 @@ export interface RequestHistoryItem {
   responseData?: any
   operationId?: string
   specTitle?: string
+  // Execution context
+  serverUrl?: string
+  authorization?: Record<string, string>
+  parameters?: Record<string, any>
 }
 
 export const useRequestHistoryStore = defineStore('requestHistory', () => {
@@ -29,7 +33,7 @@ export const useRequestHistoryStore = defineStore('requestHistory', () => {
     if (typeof localStorage === 'undefined') {
       return
     }
-    
+
     try {
       const saved = localStorage.getItem('requestHistory')
       if (saved) {
@@ -51,7 +55,7 @@ export const useRequestHistoryStore = defineStore('requestHistory', () => {
   // Save history to localStorage
   const saveHistory = () => {
     if (typeof localStorage === 'undefined') return
-    
+
     try {
       // Keep only last MAX_HISTORY_SIZE items
       const itemsToSave = history.value.slice(-MAX_HISTORY_SIZE)
@@ -70,12 +74,12 @@ export const useRequestHistoryStore = defineStore('requestHistory', () => {
     }
 
     history.value.push(historyItem)
-    
+
     // Keep only last MAX_HISTORY_SIZE items
     if (history.value.length > MAX_HISTORY_SIZE) {
       history.value = history.value.slice(-MAX_HISTORY_SIZE)
     }
-    
+
     saveHistory()
   }
 
@@ -137,7 +141,7 @@ export const useRequestHistoryStore = defineStore('requestHistory', () => {
 
       if (filters.searchQuery) {
         const query = filters.searchQuery.toLowerCase()
-        filtered = filtered.filter(item => 
+        filtered = filtered.filter(item =>
           item.path.toLowerCase().includes(query) ||
           item.method.toLowerCase().includes(query) ||
           item.url.toLowerCase().includes(query) ||
@@ -172,7 +176,7 @@ export const useRequestHistoryStore = defineStore('requestHistory', () => {
       const errors = history.value.filter(item => item.error || (item.status && item.status >= 400)).length
       const avgDuration = history.value
         .filter(item => item.duration !== undefined)
-        .reduce((sum, item) => sum + (item.duration || 0), 0) / 
+        .reduce((sum, item) => sum + (item.duration || 0), 0) /
         history.value.filter(item => item.duration !== undefined).length || 0
 
       return {

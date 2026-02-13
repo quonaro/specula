@@ -24,6 +24,8 @@
       :source-url="sourceUrl"
       :server-url="currentServerUrl"
       :authorization-credentials="getAuthorizationCredentials"
+      :initial-parameters="initialState?.parameters"
+      :initial-request-body="initialState?.requestBody"
       :response="response"
       @update:cards="handleCardsUpdate"
       @update:column-widths="handleColumnWidthsUpdate"
@@ -59,6 +61,7 @@ import Separator from './ui/Separator.vue'
 import OperationHeader from './operation/OperationHeader.vue'
 import ColumnLayout, { type CardData } from './operation/ColumnLayout.vue'
 import ColumnSettingsDialog from './operation/ColumnSettingsDialog.vue'
+import type { RequestHistoryItem } from '@/stores/requestHistory'
 
 interface Props {
   method: string
@@ -66,6 +69,7 @@ interface Props {
   operation: Operation
   spec: OpenAPISpec
   sourceUrl?: string
+  initialState?: RequestHistoryItem
 }
 
 const props = defineProps<Props>()
@@ -152,6 +156,34 @@ const getCurrentHostUrl = (): string => {
   }
   return ''
 }
+
+// Watch for initial state to restore server URL
+watch(() => props.initialState, (newState) => {
+  if (newState?.serverUrl) {
+    // Check if it matches any spec server
+    const specServers = props.spec.servers || []
+    const opServers = props.operation.servers || []
+    const allServers = [...opServers, ...specServers]
+    
+    const matchingServer = allServers.find(s => s.url === newState.serverUrl)
+    
+    if (matchingServer) {
+        selectedServer.value = matchingServer.url
+    } else {
+        // Must be custom or current host
+        if (newState.serverUrl === getCurrentHostUrl()) {
+            selectedServer.value = 'current-host'
+        } else {
+            selectedServer.value = 'custom'
+            customServerUrl.value = newState.serverUrl
+        }
+    }
+  }
+  
+  if (newState?.authorization) {
+    localAuthorizationCredentials.value = { ...newState.authorization }
+  }
+}, { immediate: true })
 
 // Get current server URL for display
 const currentServerUrl = computed(() => {

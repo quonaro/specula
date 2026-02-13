@@ -118,9 +118,12 @@
       <main class="flex-1 overflow-hidden">
         <GroupEndpointsView v-if="selectedGroup" :group-node="selectedGroup" :selected-operation="selectedOperation"
           @select-operation="handleOperationSelect" />
-        <OperationView v-else-if="operationDetails" :method="operationDetails.method" :path="operationDetails.path"
+        <OperationView v-else-if="operationDetails" 
+          :key="`${operationDetails.method}-${operationDetails.path}-${selectedHistoryItem?.id || 'default'}`"
+          :method="operationDetails.method" :path="operationDetails.path"
           :operation="operationDetails.operation" :spec="operationDetails.spec"
-          :source-url="operationDetails.sourceUrl" />
+          :source-url="operationDetails.sourceUrl" 
+          :initial-state="selectedHistoryItem" />
         <div v-else class="flex items-center justify-center h-full">
           <div class="text-center space-y-2">
             <img :src="logoUrl" alt="Logo" class="mx-auto h-16 w-16 logo-image-opacity" />
@@ -210,6 +213,7 @@ const logoUrl = computed(() => getLogoUrl())
 const tagTree = ref<TagNode | null>(null)
 const selectedOperation = ref<{ method: string; path: string } | null>(null)
 const selectedGroup = ref<TagNode | null>(null)
+const selectedHistoryItem = ref<RequestHistoryItem | null>(null)
 const showExportDialog = ref(false)
 const showAuthorizationDialog = ref(false)
 const showSpecSelectionDialog = ref(false)
@@ -832,6 +836,8 @@ const handleGlobalSearchSelect = (result: SearchResult) => {
 
   // Select the operation
   selectedOperation.value = { method: result.method, path: result.path }
+  selectedGroup.value = null
+  selectedHistoryItem.value = null
 }
 
 // Handle click outside search to close results
@@ -879,8 +885,8 @@ const handleHistorySelect = (item: RequestHistoryItem) => {
     // Fallback: try to find by path and method
     handleOperationSelect(item.method, path)
     
-    // TODO: In the future, we can restore request parameters and body from history
-    // This would require passing the history item to OperationView component
+    // Store selected history item to restore context
+    selectedHistoryItem.value = item
   }
 }
 
@@ -888,6 +894,39 @@ const handleOperationSelect = (method: string, path: string) => {
   const methodLower = method.toLowerCase()
   // Preserve spec query parameters when navigating
   const query: Record<string, string | string[]> = { ...route.query }
+
+  // Clear history item if this is a direct selection (not via handleHistorySelect which sets it after calling this)
+  // We can't easily detect if called from handleHistorySelect, so we rely on handleHistorySelect re-setting it
+  // But we need to clear it when user clicks normally.
+  // Actually, let's just clear it here. handleHistorySelect will set it AFTER calling this function if needed? 
+  // No, handleHistorySelect calls this to navigate. If we clear it here, we lose it.
+  // Better approach: handleHistorySelect sets a flag or sets it AFTER navigation? 
+  // Navigation is via router.push which is async? No, router.push is promise-based but navigation happens.
+  // Let's modify handleOperationSelect to NOT clear it, but clear it in other places (group select, search select).
+  // And also clear it if the user clicks on the sidebar operation node. SidebarNode emits 'select-operation' which calls this.
+  // So we need to distinguish between Sidebar click and History click.
+  // Sidebar component emits 'operation-select' -> handleOperationSelect in Index.vue
+  // Sidebar component emits 'history-select' -> handleHistorySelect in Index.vue
+  
+  // So when handleOperationSelect is called, we should theoretically clear it, unless it's from history.
+  // But handleHistorySelect calls handleOperationSelect.
+  
+  // Let's rely on handleHistorySelect setting it *after* calling handleOperationSelect.
+  // But wait, router.push might trigger component updates/unmounts.
+  // State is in Index.vue which is parent. Should be fine.
+  
+  // However, we want to clear it when user clicks a normal endpoint.
+  // SidebarNode -> emits select-operation -> Index.vue handleOperationSelect.
+  // We can add an optional parameter `preserveHistory?: boolean` to handleOperationSelect?
+  // Or just clear it in `onOperationSelect` in Sidebar.vue? No, Sidebar.vue emits event.
+  // Index.vue handles it.
+  
+  // Let's add a `fromHistory` parameter to `handleOperationSelect`? No, that changes signature used by template.
+  
+  // Let's just clear selectedHistoryItem in handleOperationSelect, and in handleHistorySelect set it again after calling handleOperationSelect.
+  // This might cause a brief flicker or reactivity issue if checked synchronously?
+  // Vue batches updates.
+  selectedHistoryItem.value = null
 
   // Find the operation to get its operationId
   let operation: Operation | null = null
@@ -1004,6 +1043,8 @@ const handleGroupSelect = (node: TagNode) => {
   // Preserve spec query parameters when navigating
   const query: Record<string, string | string[]> = { ...route.query }
   router.push({ path: `/group/${slug}`, query })
+  // Clear selected history item
+  selectedHistoryItem.value = null
 }
 
 const handleBackToSelection = () => {

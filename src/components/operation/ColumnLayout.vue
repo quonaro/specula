@@ -93,6 +93,8 @@ interface Props {
   sourceUrl?: string
   serverUrl?: string
   authorizationCredentials?: Record<string, string>
+  initialParameters?: Record<string, any>
+  initialRequestBody?: any
   response?: any
   onResponse?: (response: any) => void
 }
@@ -339,6 +341,8 @@ const getCardProps = (type: CardData['type']) => {
         pathItem: props.pathItem,
         serverUrl: props.serverUrl,
         authorizationCredentials: props.authorizationCredentials,
+        initialParameters: props.initialParameters,
+        initialRequestBody: props.initialRequestBody,
       }
     case 'response':
       return {

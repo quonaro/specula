@@ -159,6 +159,8 @@ interface Props {
   sourceUrl?: string
   serverUrl?: string
   authorizationCredentials?: Record<string, string>
+  initialParameters?: Record<string, any>
+  initialRequestBody?: any
 }
 
 const props = defineProps<Props>()
@@ -621,13 +623,55 @@ watch(() => [props.operation, props.path, props.method], async () => {
   // Load saved values
   loadSavedParamValues()
   await loadSavedRequestBody()
+
+  // Apply initial values if provided (restore from history) - ensuring this runs after reset
+  if (props.initialParameters) {
+    paramValues.value = { ...paramValues.value, ...props.initialParameters }
+  }
+  
+  if (props.initialRequestBody) {
+    if (typeof props.initialRequestBody === 'object' && props.initialRequestBody !== null) {
+        requestBody.value = JSON.stringify(props.initialRequestBody, null, 2)
+    } else {
+        requestBody.value = String(props.initialRequestBody)
+    }
+  }
 }, { immediate: false, deep: false })
+
+// Watch for initial props changes (when restored from history)
+watch(() => [props.initialParameters, props.initialRequestBody], () => {
+  if (props.initialParameters) {
+    paramValues.value = { ...paramValues.value, ...props.initialParameters }
+  }
+  
+  if (props.initialRequestBody) {
+     if (typeof props.initialRequestBody === 'object' && props.initialRequestBody !== null) {
+        requestBody.value = JSON.stringify(props.initialRequestBody, null, 2)
+    } else {
+        requestBody.value = String(props.initialRequestBody)
+    }
+  }
+})
 
 // Initialize on mount
 onMounted(async () => {
   await initializeRequestBody()
   loadSavedParamValues()
   await loadSavedRequestBody()
+
+  // Apply initial values if provided (restore from history)
+  if (props.initialParameters) {
+    paramValues.value = { ...paramValues.value, ...props.initialParameters }
+  }
+  
+  if (props.initialRequestBody) {
+    // If request body is object, stringify it
+    if (typeof props.initialRequestBody === 'object' && props.initialRequestBody !== null) {
+        requestBody.value = JSON.stringify(props.initialRequestBody, null, 2)
+    } else {
+        requestBody.value = String(props.initialRequestBody)
+    }
+  }
 })
 
 // Cleanup on unmount
@@ -1220,6 +1264,10 @@ const handleExecute = async () => {
       responseData,
       operationId: props.operation.operationId,
       specTitle: props.spec.info?.title,
+      // Execution context
+      serverUrl: resolvedServerUrl,
+      authorization: props.authorizationCredentials,
+      parameters: paramValues.value,
     })
     
     // Show validation warnings/errors (only for non-success status codes)
@@ -1272,6 +1320,19 @@ const handleExecute = async () => {
       errorMessage: error.message,
       operationId: props.operation.operationId,
       specTitle: props.spec.info?.title,
+      // Execution context
+      serverUrl: serverUrl,
+      authorization: props.authorizationCredentials,
+      parameters: paramValues.value,
+      requestBody: isExecuting.value && hasRequestBody.value ? (
+        requestBodyFile.value ? '[File]' : (
+          requestBody.value ? (
+             (() => {
+                try { return JSON.parse(requestBody.value) } catch { return requestBody.value }
+             })()
+          ) : undefined
+        )
+      ) : undefined
     })
 
     emit('response', response.value)

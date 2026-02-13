@@ -7,7 +7,7 @@ function getBackendUrl(): string {
   // Try to detect from current origin
   const origin = window.location.origin
   const url = new URL(origin)
-  
+
   // If frontend is on port 8080, backend might be on 8000
   if (url.port === '8080') {
     url.port = '8000'
@@ -38,6 +38,10 @@ async function checkBackendHealth(url: string, timeout: number = 3000): Promise<
     return false
   }
 
+  // User requested to remove this health check entirely
+  return false
+
+  /*
   try {
     const healthUrl = `${url.replace(/\/$/, '')}/health`
     const controller = new AbortController()
@@ -59,6 +63,7 @@ async function checkBackendHealth(url: string, timeout: number = 3000): Promise<
     // Network error, timeout, or other issues
     return false
   }
+  */
 }
 
 /**

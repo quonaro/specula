@@ -8,6 +8,8 @@
     :source-url="sourceUrl" 
     :server-url="serverUrl"
     :authorization-credentials="authorizationCredentials" 
+    :initial-parameters="initialParameters"
+    :initial-request-body="initialRequestBody"
     @response="handleResponse" 
   />
 </template>
@@ -25,6 +27,8 @@ interface Props {
   sourceUrl?: string
   serverUrl?: string
   authorizationCredentials?: Record<string, string>
+  initialParameters?: Record<string, any>
+  initialRequestBody?: any
 }
 
 const props = defineProps<Props>()
