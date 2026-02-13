@@ -450,7 +450,7 @@ const restoreStateFromRoute = () => {
       
       // Get specId from the found spec or fallback to query
       const specId = findSpecHash(found.spec) || getSpecIdFromQuery()
-      if (specId) {
+      if (specId && isHash(specId)) {
         const query: Record<string, string | string[]> = { ...route.query }
         router.replace({ path: `/spec/${specId}/endpoint/${method.toLowerCase()}/${operationIdFromUrl}`, query })
       }
@@ -537,7 +537,7 @@ const restoreStateFromRoute = () => {
           const query: Record<string, string | string[]> = { ...route.query }
           // Find the spec that contains this operation to get the correct specId
           const specId = findSpecHash(foundSpec) || getSpecIdFromQuery()
-          if (specId) {
+          if (specId && isHash(specId)) {
             router.replace({ path: `/spec/${specId}/endpoint/${methodLower}/${slug}`, query })
           } else {
             router.replace({ path: `/endpoint/${methodLower}/${slug}`, query })
@@ -815,7 +815,7 @@ const handleGlobalSearchSelect = (result: SearchResult) => {
   } else {
     // Non-standalone mode: use operationId format
     const specId = findSpecHash(spec.spec)
-    if (specId) {
+    if (specId && isHash(specId)) {
       router.push({
         path: `/spec/${specId}/endpoint/${result.method.toLowerCase()}/${operationId}`
       })
@@ -991,7 +991,7 @@ const handleOperationSelect = (method: string, path: string) => {
     specId = getSpecIdFromQuery()
   }
 
-  if (specId) {
+  if (specId && isHash(specId)) {
     router.push({ path: `/spec/${specId}/endpoint/${methodLower}/${operationId}`, query })
   } else {
     router.push({ path: `/endpoint/${methodLower}/${operationId}`, query })
