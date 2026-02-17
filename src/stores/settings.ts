@@ -108,8 +108,18 @@ export const useSettingsStore = defineStore('settings', () => {
   const customServerUrl = ref('')
   const preferredServerType = ref<'custom' | 'current-host' | 'spec' | null>(null)
 
-  // Initialize server preferences from localStorage
+  // History cleaning preferences
+  const autoClearHistory = ref(false)
+  const clearHistoryInterval = ref('1h')
+
+  // Initialize from localStorage
   if (typeof window !== 'undefined') {
+    const savedAutoClear = localStorage.getItem('autoClearHistory')
+    if (savedAutoClear !== null) autoClearHistory.value = savedAutoClear === 'true'
+
+    const savedInterval = localStorage.getItem('clearHistoryInterval')
+    if (savedInterval) clearHistoryInterval.value = savedInterval
+
     const savedCustomUrl = localStorage.getItem('customServerUrl')
     if (savedCustomUrl) customServerUrl.value = savedCustomUrl
 
@@ -118,6 +128,19 @@ export const useSettingsStore = defineStore('settings', () => {
       preferredServerType.value = savedPreferredType
     }
   }
+
+  // Save history cleaning preferences
+  watch(autoClearHistory, (newValue) => {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('autoClearHistory', newValue.toString())
+    }
+  })
+
+  watch(clearHistoryInterval, (newValue) => {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('clearHistoryInterval', newValue)
+    }
+  })
 
   // Save server preferences
   watch(customServerUrl, (newValue) => {
@@ -149,7 +172,9 @@ export const useSettingsStore = defineStore('settings', () => {
     reapplyAccentColor,
     customServerUrl,
     preferredServerType,
-    setServerPreference
+    setServerPreference,
+    autoClearHistory,
+    clearHistoryInterval
   }
 })
 

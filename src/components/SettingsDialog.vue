@@ -252,6 +252,31 @@
         </div>
       </div>
     </div>
+
+    <!-- History Cleaning Section -->
+    <div class="space-y-4 pt-6 mt-6 border-t">
+      <div class="flex items-center justify-between">
+        <div class="space-y-0.5">
+          <label class="text-sm font-medium">Auto-clear history</label>
+          <p class="text-[12px] text-muted-foreground">Automatically delete old request history</p>
+        </div>
+        <Checkbox v-model="settingsStore.autoClearHistory" />
+      </div>
+
+      <div v-if="settingsStore.autoClearHistory" class="space-y-2 animate-in slide-in-from-top-2 duration-200">
+        <label class="text-sm font-medium">Clear items older than</label>
+        <Select v-model="settingsStore.clearHistoryInterval">
+          <option value="1m">1 minute</option>
+          <option value="5m">5 minutes</option>
+          <option value="10m">10 minutes</option>
+          <option value="30m">30 minutes</option>
+          <option value="1h">1 hour</option>
+          <option value="12h">12 hours</option>
+          <option value="1d">1 day</option>
+          <option value="1w">1 week</option>
+        </Select>
+      </div>
+    </div>
   </Dialog>
 </template>
 
@@ -259,6 +284,8 @@
 import { computed, ref, onUnmounted } from 'vue'
 import { Sun, Moon, Monitor, Check } from 'lucide-vue-next'
 import Dialog from './ui/Dialog.vue'
+import Checkbox from './ui/Checkbox.vue'
+import Select from './ui/Select.vue'
 import { useThemeStore } from '@/stores/theme'
 import { useSettingsStore } from '@/stores/settings'
 
