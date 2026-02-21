@@ -108,7 +108,7 @@ jobs:
               <meta name="viewport" content="width=device-width, initial-scale=1.0">
               <title>My API Documentation</title>
               <!-- Load Specula CSS from Official CDN -->
-              <link rel="stylesheet" href="https://ghly.d3vb0x.ru/quonaro/Specula/specula.css?ref=standalone">
+              <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/quonaro/Specula@standalone/specula.css">
               <style>
                   #specula-container {
                       width: 100%;
@@ -121,7 +121,7 @@ jobs:
               <div id="specula-container"></div>
               
               <!-- Load Specula JavaScript from Official CDN -->
-              <script src="https://ghly.d3vb0x.ru/quonaro/Specula/specula.js?ref=standalone"></script>
+              <script src="https://cdn.jsdelivr.net/gh/quonaro/Specula@standalone/specula.js"></script>
               <script>
                   // Initialize Specula
                   Specula.init({

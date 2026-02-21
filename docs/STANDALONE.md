@@ -16,7 +16,7 @@ The easiest way to use Specula is to load it from the official CDN:
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>My API Documentation</title>
     <!-- Load Specula CSS from official CDN -->
-    <link rel="stylesheet" href="https://ghly.d3vb0x.ru/quonaro/Specula/specula.css?ref=standalone" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/quonaro/Specula@standalone/specula.css" />
     <style>
       #specula-container {
         width: 100%;
@@ -29,7 +29,7 @@ The easiest way to use Specula is to load it from the official CDN:
     <div id="specula-container"></div>
 
     <!-- Load Specula JavaScript from official CDN -->
-    <script src="https://ghly.d3vb0x.ru/quonaro/Specula/specula.js?ref=standalone"></script>
+    <script src="https://cdn.jsdelivr.net/gh/quonaro/Specula@standalone/specula.js"></script>
     <script>
       // Initialize Specula
       Specula.init({
